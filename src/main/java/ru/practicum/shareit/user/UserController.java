@@ -22,25 +22,25 @@ public class UserController {
     private final UserMapper userMapper;
 
     @GetMapping
-    public List<UserDto> getAllUser() {
+    public List<UserDto> getAllUsers() {
         return userService.getAllUsers().stream()
                 .map(userMapper::mapToDto)
                 .collect(Collectors.toList());
     }
 
-    @GetMapping
+    @GetMapping("/{id}")
     public UserDto getUserById(@PathVariable Long id) {
         return userMapper.mapToDto(userService.getUserById(id));
     }
 
     @PostMapping
-    public UserDto createUser(@RequestBody UserDto userDto) {
+    public UserDto createUser(@Valid @RequestBody UserDto userDto) {
         User user = userMapper.mapToUser(userDto);
         User createdUser = userService.createUser(user);
         return userMapper.mapToDto(createdUser);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public UserDto updateUser(@PathVariable Long id, @Valid @RequestBody UserDto userDto) {
         User user = userMapper.mapToUser(userDto);
         User updatedUser = userService.updateUser(id, user);

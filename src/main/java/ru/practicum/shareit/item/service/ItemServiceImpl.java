@@ -1,8 +1,8 @@
 package ru.practicum.shareit.item.service;
 
-
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 
@@ -20,39 +20,65 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public Item getItemById(Long itemId) {
-        return itemRepository.getItemById(itemId)
-                .orElseThrow(() -> new RuntimeException(String.format("Item с ID=%d не найден", itemId)));
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException(String.format("Item с ID=%d не найден", itemId)));
     }
 
     @Override
     public Item addNewItem(long userId, Item item) {
-        item.setId(userId);
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new IllegalArgumentException("Имя вещи не может быть пустым");
+        }
+        if (item.getDescription() == null || item.getDescription().isBlank()) {
+            throw new IllegalArgumentException("Описание вещи не может быть пустым");
+        }
+        if (item.getAvailable() == null) {
+            throw new IllegalArgumentException("Поле available обязательно");
+        }
+
+        item.setUserId(userId);
         return itemRepository.save(item);
     }
 
     @Override
     public void deleteItem(long userId, long itemId) {
+        Item existingItem = getItemById(itemId);
+        if (!existingItem.getUserId().equals(userId)) {
+            throw new NotFoundException(
+                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", itemId, userId)
+            );
+        }
         itemRepository.deleteByUserIdAndItemId(userId, itemId);
     }
 
     @Override
-    public Item updateItem(Item item) {
+    public Item updateItem(Long userId, Item item) {
         Item existingItem = getItemById(item.getId());
-        if (item.getName() != null) {
+        // Проверяем, что пользователь владеет вещью
+        if (!existingItem.getUserId().equals(userId)) {
+            throw new NotFoundException(
+                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", item.getId(), userId)
+            );
+        }
+
+        if (item.getName() != null && !item.getName().isBlank()) {
             existingItem.setName(item.getName());
         }
-        if (item.getDescription() != null) {
+        if (item.getDescription() != null && !item.getDescription().isBlank()) {
             existingItem.setDescription(item.getDescription());
         }
         if (item.getAvailable() != null) {
             existingItem.setAvailable(item.getAvailable());
         }
-        return itemRepository.updateItem(existingItem);
+        return itemRepository.save(existingItem);
     }
 
     @Override
     public List<Item> searchItems(String text) {
-        return itemRepository.searchItems(text);
+        if (text == null || text.trim().isEmpty()) {
+            return List.of();
+        }
+        return itemRepository.searchItems(text.trim());
     }
 
 }

@@ -8,7 +8,7 @@ public class ItemMapper {
     public Item mapToItem(ItemDto itemDto) {
         return Item.builder()
                 .id(itemDto.getId())
-                .userId(itemDto.getUserId())
+                .userId(itemDto.getOwner())
                 .name(itemDto.getName())
                 .description(itemDto.getDescription())
                 .available(itemDto.getAvailable())
@@ -18,7 +18,7 @@ public class ItemMapper {
     public ItemDto mapToDto(Item item) {
         return ItemDto.builder()
                 .id(item.getId())
-                .userId(item.getUserId())
+                .owner(item.getUserId())
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getAvailable())

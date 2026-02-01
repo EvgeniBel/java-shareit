@@ -17,7 +17,7 @@ public class ItemRepository {
         return userItems.getOrDefault(userId, new ArrayList<>());
     }
 
-    public Optional<Item> findByItemId(Long itemId) {
+    public Optional<Item> findById(Long itemId) {
         return userItems.values().stream()
                 .flatMap(List::stream)
                 .filter(item -> item.getId().equals(itemId))
@@ -50,33 +50,23 @@ public class ItemRepository {
 
     public void deleteByUserIdAndItemId(long userId, long itemId) {
         List<Item> items = userItems.get(userId);
-        if (items == null) {
+        if (items != null) {
             items.removeIf(item -> item.getId().equals(itemId));
             userItems.put(userId, items);
         }
     }
 
-    public Item updateItem(Item item) {
-        return save(item);
-    }
+       public List<Item> searchItems(String text) {
+           if (text == null || text.isBlank()) {
+               return new ArrayList<>();
+           }
 
-    public Optional<Item> getItemById(Long itemId) {
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> item.getId().equals(itemId))
-                .findFirst();
-    }
-
-    public List<Item> searchItems(String text) {
-        if (text == null || text.isBlank()) {
-            return new ArrayList<>();
-        }
-
-        String searchText = text.toLowerCase();
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> item.getName().toLowerCase().contains(searchText) ||
-                        item.getDescription().toLowerCase().contains(searchText))
-                .collect(Collectors.toList());
-    }
+           String searchText = text.toLowerCase();
+           return userItems.values().stream()
+                   .flatMap(List::stream)
+                   .filter(item -> item.getName().toLowerCase().contains(searchText) ||
+                           item.getDescription().toLowerCase().contains(searchText))
+                   .filter(item -> Boolean.TRUE.equals(item.getAvailable())) // ДОБАВИТЬ ЭТО
+                   .collect(Collectors.toList());
+       }
 }

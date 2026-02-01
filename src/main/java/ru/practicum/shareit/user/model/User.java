@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class User {
     private Long id;
-    @NotBlank(message = "Имя не может быть пустым")
     private String name;
     private String email;
 }

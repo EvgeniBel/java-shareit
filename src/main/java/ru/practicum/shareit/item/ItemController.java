@@ -28,30 +28,32 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItemById(@PathVariable Long itemId) {
+    public ItemDto getItemById(@RequestHeader("X-Later-User-Id") Long userId,
+                               @PathVariable Long itemId) {
         return itemMapper.mapToDto(itemService.getItemById(itemId));
     }
 
     @PostMapping
     public ItemDto addNewItem(@RequestHeader("X-Later-User-Id") Long userId,
-                              @RequestBody ItemDto itemDto) {
+                              @Valid @RequestBody ItemDto itemDto) {
         var item = itemMapper.mapToItem(itemDto);
         var savedItem = itemService.addNewItem(userId, item);
         return itemMapper.mapToDto(savedItem);
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{itemId}")
     public void delete(@RequestHeader("X-Later-User-Id") long userId,
                        @PathVariable(name = "itemId") long itemId) {
         itemService.deleteItem(userId, itemId);
     }
 
-    @PutMapping
-    public ItemDto updateItem(@PathVariable Long itemId,
+    @PutMapping("/{itemId}")
+    public ItemDto updateItem(@RequestHeader("X-Later-User-Id") Long userId,
+                              @PathVariable Long itemId,
                               @Valid @RequestBody ItemDto itemDto) {
         var item = itemMapper.mapToItem(itemDto);
         item.setId(itemId);
-        var updatedItem = itemService.updateItem(item);
+        var updatedItem = itemService.updateItem(userId, item);
         return itemMapper.mapToDto(updatedItem);
     }
 

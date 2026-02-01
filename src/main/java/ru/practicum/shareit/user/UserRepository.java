@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @Repository
 public class UserRepository {
     private final ConcurrentHashMap<Long, User> users = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> emailToIdMap = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
 
-    public List<User> getAllUser() {
+    public List<User> findAll() {
         return new ArrayList<>(users.values());
     }
 
@@ -26,11 +27,29 @@ public class UserRepository {
         if (user.getId() == null) {
             user.setId(idGenerator.getAndIncrement());
         }
+
+        if (users.containsKey(user.getId())) {
+            User existingUser = users.get(user.getId());
+            if (!existingUser.getEmail().equals(user.getEmail())) {
+                emailToIdMap.remove(existingUser.getEmail());
+            }
+        }
+
         users.put(user.getId(), user);
+        emailToIdMap.put(user.getEmail(), user.getId());
         return user;
     }
 
     public void deleteUser(Long userId) {
-        users.remove(userId);
+        User user = users.get(userId);
+        if (user != null) {
+            emailToIdMap.remove(user.getEmail());
+            users.remove(userId);
+        }
+    }
+
+    public Optional<User> findByEmail(String email) {
+        Long userId = emailToIdMap.get(email);
+        return userId != null ? Optional.ofNullable(users.get(userId)) : Optional.empty();
     }
 }
