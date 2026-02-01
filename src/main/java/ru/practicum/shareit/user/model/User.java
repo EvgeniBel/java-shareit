@@ -1,20 +1,21 @@
-package ru.practicum.shareit.item.dto;
+package ru.practicum.shareit.user.model;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * TODO Sprint add-controllers.
  */
 @Data
 @Builder
-public class ItemDto {
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
     private Long id;
-    private Long userId;
-
     @NotBlank(message = "Имя не может быть пустым")
     private String name;
-    private String description;
-    private Boolean available;
+    private String email;
 }
