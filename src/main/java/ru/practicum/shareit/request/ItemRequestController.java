@@ -27,7 +27,7 @@ public class ItemRequestController {
     @GetMapping
     public List<ItemRequestWithItemsDto> getUserItemRequests(
             @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return itemRequestService.getUserItemRequests(userId);  // ← Теперь работает!
+        return itemRequestService.getUserItemRequests(userId);
     }
 
     @GetMapping("/all")
@@ -42,6 +42,6 @@ public class ItemRequestController {
     public ItemRequestWithItemsDto getItemRequest(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @PathVariable Long requestId) {
-        return itemRequestService.getItemRequest(userId, requestId);  // ← Теперь работает!
+        return itemRequestService.getItemRequest(userId, requestId);
     }
 }

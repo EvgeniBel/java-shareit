@@ -138,15 +138,15 @@ public class BookingServiceImpl implements BookingService {
                         .collect(Collectors.toList());
             case WAITING:
                 return bookings.stream()
-                        .filter(b -> b.getStatus() == BookingStatus.WAITING)  // Исправлено: BookingStatus
+                        .filter(b -> b.getStatus() == BookingStatus.WAITING)
                         .collect(Collectors.toList());
             case REJECTED:
                 return bookings.stream()
-                        .filter(b -> b.getStatus() == BookingStatus.REJECTED) // Исправлено: BookingStatus
+                        .filter(b -> b.getStatus() == BookingStatus.REJECTED)
                         .collect(Collectors.toList());
             case CANCELED:
                 return bookings.stream()
-                        .filter(b -> b.getStatus() == BookingStatus.CANCELED) // Исправлено: BookingStatus
+                        .filter(b -> b.getStatus() == BookingStatus.CANCELED)
                         .collect(Collectors.toList());
             case ALL:
             default:
@@ -163,7 +163,6 @@ public class BookingServiceImpl implements BookingService {
 
         List<Booking> bookings = bookingRepository.findByItemOwnerId(userId);
 
-        // Конвертируем строку в enum
         BookingFilterState bookingState = BookingFilterState.fromString(state);
 
         List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
@@ -171,7 +170,6 @@ public class BookingServiceImpl implements BookingService {
 
         return mapBookingsToResponseDto(paginatedBookings);
     }
-
 
     private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
 
@@ -218,11 +216,6 @@ public class BookingServiceImpl implements BookingService {
         return bookings.subList(start, end);
     }
 
-    private static boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
-                                         LocalDateTime start2, LocalDateTime end2) {
-        return start1.isBefore(end2) && start2.isBefore(end1);
-    }
-
     private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
         return bookings.stream()
                 .map(booking -> {
@@ -232,4 +225,10 @@ public class BookingServiceImpl implements BookingService {
                 })
                 .collect(Collectors.toList());
     }
+
+    private static boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
+                                         LocalDateTime start2, LocalDateTime end2) {
+        return start1.isBefore(end2) && start2.isBefore(end1);
+    }
+
 }
