@@ -8,7 +8,9 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
-import ru.practicum.shareit.booking.model.*;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingFilterState;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.BookingNotFoundException;
 import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -220,6 +222,7 @@ public class BookingServiceImpl implements BookingService {
                                          LocalDateTime start2, LocalDateTime end2) {
         return start1.isBefore(end2) && start2.isBefore(end1);
     }
+
     private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
         return bookings.stream()
                 .map(booking -> {
