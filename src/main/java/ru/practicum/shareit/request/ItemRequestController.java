@@ -10,9 +10,6 @@ import ru.practicum.shareit.request.service.ItemRequestService;
 
 import java.util.List;
 
-/**
- * TODO Sprint add-item-requests.
- */
 @RestController
 @RequestMapping(path = "/requests")
 @RequiredArgsConstructor
@@ -30,9 +27,7 @@ public class ItemRequestController {
     @GetMapping
     public List<ItemRequestWithItemsDto> getUserItemRequests(
             @RequestHeader("X-Sharer-User-Id") Long userId) {
-        // Возвращаем запросы с вещами
-        // TODO: нужно добавить метод в сервисе
-        return List.of();
+        return itemRequestService.getUserItemRequests(userId);  // ← Теперь работает!
     }
 
     @GetMapping("/all")
@@ -47,8 +42,6 @@ public class ItemRequestController {
     public ItemRequestWithItemsDto getItemRequest(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @PathVariable Long requestId) {
-        // Возвращаем запрос с вещами
-        // TODO: нужно добавить метод в сервисе
-        return null;
+        return itemRequestService.getItemRequest(userId, requestId);  // ← Теперь работает!
     }
 }

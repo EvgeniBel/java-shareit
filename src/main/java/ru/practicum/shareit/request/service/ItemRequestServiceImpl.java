@@ -35,41 +35,54 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
-    public List<ItemRequestDto> getUserItemRequests(Long userId) {
+    public List<ItemRequestWithItemsDto> getUserItemRequests(Long userId) {  // ← Изменил тип!
         List<ItemRequest> requests = itemRequestRepository.findByRequestorId(userId);
+
         return requests.stream()
-                .map(itemRequestMapper::mapToDto)
+                .map(request -> {
+                    List<Item> items = itemService.getItemsByRequestId(request.getId());
+                    return ItemRequestWithItemsDto.builder()
+                            .id(request.getId())
+                            .description(request.getDescription())
+                            .requestorId(request.getRequestorId())
+                            .created(request.getCreated())
+                            .items(items.stream()
+                                    .map(itemMapper::mapToDto)
+                                    .collect(Collectors.toList()))
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ItemRequestDto> getAllItemRequests(Long userId, Integer from, Integer size) {
-        // TODO: реализовать пагинацию
-        List<ItemRequest> requests = itemRequestRepository.findAllExceptUser(userId);
-        return requests.stream()
+        List<ItemRequest> allRequests = itemRequestRepository.findAllExceptUser(userId);
+
+        int start = Math.min(from, allRequests.size());
+        int end = Math.min(start + size, allRequests.size());
+        List<ItemRequest> paginatedRequests = allRequests.subList(start, end);
+
+        return paginatedRequests.stream()
                 .map(itemRequestMapper::mapToDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public ItemRequestDto getItemRequest(Long userId, Long requestId) {
-        ItemRequest itemRequest = itemRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Запрос не найден"));
-        return itemRequestMapper.mapToDto(itemRequest);
-    }
-
-    public ItemRequestWithItemsDto getRequestByIdWithItems(Long userId, Long requestId) {
+    public ItemRequestWithItemsDto getItemRequest(Long userId, Long requestId) {  // ← Изменил тип!
         ItemRequest itemRequest = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос не найден"));
 
         List<Item> items = itemService.getItemsByRequestId(requestId);
 
-        ItemRequestWithItemsDto dto = mapToWithItemsDto(itemRequest);
-        dto.setItems(items.stream()
-                .map(itemMapper::mapToDto)
-                .collect(Collectors.toList()));
-
-        return dto;
+        return ItemRequestWithItemsDto.builder()
+                .id(itemRequest.getId())
+                .description(itemRequest.getDescription())
+                .requestorId(itemRequest.getRequestorId())
+                .created(itemRequest.getCreated())
+                .items(items.stream()
+                        .map(itemMapper::mapToDto)
+                        .collect(Collectors.toList()))
+                .build();
     }
 
     private ItemRequestWithItemsDto mapToWithItemsDto(ItemRequest itemRequest) {

@@ -20,7 +20,5 @@ public class ItemRequestDto {
     private String description;
 
     private Long requestorId;
-
-    @NotNull(message = "Дата создания не может быть null")
     private LocalDateTime created;
 }
