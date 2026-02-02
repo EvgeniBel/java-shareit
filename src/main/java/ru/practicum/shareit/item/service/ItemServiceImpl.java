@@ -7,6 +7,7 @@ import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -54,7 +55,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public Item updateItem(Long userId, Item item) {
         Item existingItem = getItemById(item.getId());
-        // Проверяем, что пользователь владеет вещью
         if (!existingItem.getUserId().equals(userId)) {
             throw new NotFoundException(
                     String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", item.getId(), userId)
@@ -79,6 +79,29 @@ public class ItemServiceImpl implements ItemService {
             return List.of();
         }
         return itemRepository.searchItems(text.trim());
+    }
+
+    @Override
+    public Item patchItem(Long userId, Long itemId, Map<String, Object> updates) {
+        Item existingItem = getItemById(itemId);
+
+        if (!existingItem.getUserId().equals(userId)) {
+            throw new NotFoundException(
+                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", itemId, userId)
+            );
+        }
+
+        if (updates.containsKey("name") && updates.get("name") != null) {
+            existingItem.setName((String) updates.get("name"));
+        }
+        if (updates.containsKey("description") && updates.get("description") != null) {
+            existingItem.setDescription((String) updates.get("description"));
+        }
+        if (updates.containsKey("available") && updates.get("available") != null) {
+            existingItem.setAvailable((Boolean) updates.get("available"));
+        }
+
+        return itemRepository.save(existingItem);
     }
 
 }

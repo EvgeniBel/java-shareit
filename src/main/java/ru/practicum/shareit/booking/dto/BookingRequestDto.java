@@ -7,21 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.booking.model.StatusBooking;
 
 import java.time.LocalDateTime;
 
-/**
- * TODO Sprint add-bookings.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingDto {
-
-    private Long id;
-
+public class BookingRequestDto {
     @NotNull(message = "Дата начала не может быть null")
     @FutureOrPresent(message = "Дата начала должна быть в будущем или настоящем")
     private LocalDateTime start;
@@ -32,7 +25,4 @@ public class BookingDto {
 
     @NotNull(message = "ID вещи не может быть null")
     private Long itemId;
-
-    private Long bookerId;
-    private StatusBooking status;
 }

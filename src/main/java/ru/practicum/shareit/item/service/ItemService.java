@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.item.model.Item;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public interface ItemService {
@@ -19,4 +20,6 @@ public interface ItemService {
     Item updateItem(Long userId, Item item);
 
     List<Item> searchItems(String text);
+
+    Item patchItem(Long userId, Long itemId, Map<String, Object> updates);
 }

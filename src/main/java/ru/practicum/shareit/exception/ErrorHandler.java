@@ -33,4 +33,22 @@ public class ErrorHandler {
     public Map<String, String> handleOtherExceptions(final Throwable e) {
         return Map.of("error", "Внутренняя ошибка сервера");
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleBookingValidationException(final BookingValidationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleUnauthorizedAccessException(final UnauthorizedAccessException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleBookingNotFoundException(final BookingNotFoundException e) {
+        return Map.of("error", e.getMessage());
+    }
 }
