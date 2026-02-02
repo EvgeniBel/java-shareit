@@ -15,6 +15,7 @@ public class BookingMapper {
                 .status(StatusBooking.WAITING)
                 .build();
     }
+
     public Booking mapToBooking(BookingDto bookingDto) {
         return Booking.builder()
                 .id(bookingDto.getId())

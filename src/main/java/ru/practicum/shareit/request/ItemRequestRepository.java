@@ -1,7 +1,9 @@
 package ru.practicum.shareit.request;
 
 import org.springframework.stereotype.Repository;
+import ru.practicum.shareit.request.model.ItemRequest;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,14 +31,14 @@ public class ItemRequestRepository {
     public List<ItemRequest> findByRequestorId(Long requestorId) {
         return requests.values().stream()
                 .filter(request -> request.getRequestorId().equals(requestorId))
-                .sorted((r1, r2) -> r2.getCreated().compareTo(r1.getCreated())) // Новые первыми
+                .sorted(Comparator.comparing(ItemRequest::getCreated).reversed())
                 .collect(Collectors.toList());
     }
 
     public List<ItemRequest> findAllExceptUser(Long userId) {
         return requests.values().stream()
                 .filter(request -> !request.getRequestorId().equals(userId))
-                .sorted((r1, r2) -> r2.getCreated().compareTo(r1.getCreated())) // Новые первыми
+                .sorted(Comparator.comparing(ItemRequest::getCreated).reversed())
                 .collect(Collectors.toList());
     }
 

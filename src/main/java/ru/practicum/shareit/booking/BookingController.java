@@ -10,9 +10,6 @@ import ru.practicum.shareit.booking.service.BookingService;
 
 import java.util.List;
 
-/**
- * TODO Sprint add-bookings.
- */
 @RestController
 @RequestMapping(path = "/bookings")
 @RequiredArgsConstructor
@@ -31,7 +28,7 @@ public class BookingController {
     public BookingResponseDto updateBookingStatus(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @PathVariable Long bookingId,
-            @RequestParam Boolean approved) {
+            @RequestParam(required = true) Boolean approved) {
         return bookingService.updateBookingStatus(userId, bookingId, approved);
     }
 

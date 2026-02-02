@@ -11,9 +11,6 @@ import ru.practicum.shareit.booking.model.StatusBooking;
 
 import java.time.LocalDateTime;
 
-/**
- * TODO Sprint add-bookings.
- */
 @Data
 @Builder
 @NoArgsConstructor

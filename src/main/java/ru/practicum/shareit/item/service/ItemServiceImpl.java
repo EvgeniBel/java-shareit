@@ -2,22 +2,27 @@ package ru.practicum.shareit.item.service;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 @AllArgsConstructor
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final ItemRequestRepository itemRequestRepository;
+    private final UserService userService;
 
     @Override
     public List<Item> getItems(long userId) {
+        userService.getUserById(userId);
         return itemRepository.findByUserId(userId);
     }
 
@@ -28,7 +33,9 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public Item addNewItem(long userId, Item item) {
+        userService.getUserById(userId);
         if (item.getName() == null || item.getName().isBlank()) {
             throw new IllegalArgumentException("Имя вещи не может быть пустым");
         }
@@ -41,10 +48,6 @@ public class ItemServiceImpl implements ItemService {
         if (item.getRequestId() != null) {
             var request = itemRequestRepository.findById(item.getRequestId())
                     .orElseThrow(() -> new NotFoundException("Запрос не найден"));
-
-            if (request.getRequestorId().equals(userId)) {
-                throw new IllegalArgumentException("Нельзя создать вещь для своего же запроса");
-            }
         }
 
         item.setUserId(userId);
@@ -52,24 +55,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public void deleteItem(long userId, long itemId) {
-        Item existingItem = getItemById(itemId);
-        if (!existingItem.getUserId().equals(userId)) {
-            throw new NotFoundException(
-                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", itemId, userId)
-            );
-        }
+        userService.getUserById(userId);
+        Item existingItem = getItemByIdAndCheckOwner(itemId, userId);
         itemRepository.deleteByUserIdAndItemId(userId, itemId);
     }
 
     @Override
+    @Transactional
     public Item updateItem(Long userId, Item item) {
-        Item existingItem = getItemById(item.getId());
-        if (!existingItem.getUserId().equals(userId)) {
-            throw new NotFoundException(
-                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", item.getId(), userId)
-            );
-        }
+        Item existingItem = getItemByIdAndCheckOwner(item.getId(), userId);
 
         if (item.getName() != null && !item.getName().isBlank()) {
             existingItem.setName(item.getName());
@@ -84,6 +80,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public List<Item> searchItems(String text) {
         if (text == null || text.trim().isEmpty()) {
             return List.of();
@@ -92,14 +89,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public Item patchItem(Long userId, Long itemId, Map<String, Object> updates) {
-        Item existingItem = getItemById(itemId);
-
-        if (!existingItem.getUserId().equals(userId)) {
-            throw new NotFoundException(
-                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", itemId, userId)
-            );
-        }
+        userService.getUserById(userId);
+        Item existingItem = getItemByIdAndCheckOwner(itemId, userId);
 
         if (updates.containsKey("name") && updates.get("name") != null) {
             existingItem.setName((String) updates.get("name"));
@@ -115,6 +108,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public List<Item> getItemsByRequestId(Long requestId) {
         if (requestId != null) {
             itemRequestRepository.findById(requestId)
@@ -122,5 +116,15 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return itemRepository.findByRequestId(requestId);
+    }
+
+    private Item getItemByIdAndCheckOwner(Long itemId, Long userId) {
+        Item item = getItemById(itemId);
+        if (!item.getUserId().equals(userId)) {
+            throw new NotFoundException(
+                    String.format("Вещь с ID=%d не найдена у пользователя с ID=%d", itemId, userId)
+            );
+        }
+        return item;
     }
 }

@@ -1,6 +1,5 @@
 package ru.practicum.shareit.booking.service;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,9 +15,11 @@ import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,23 +38,19 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponseDto createBooking(Long userId, BookingRequestDto bookingRequestDto) {
         log.info("Создание бронирования пользователем с ID={}", userId);
 
-        // Проверяем существование пользователя
         userService.getUserById(userId);
 
-        // Получаем вещь
         Item item = itemService.getItemById(bookingRequestDto.getItemId());
 
-        // Проверки
         validateBookingCreation(userId, item, bookingRequestDto);
 
-        // Создаем бронирование
         Booking booking = bookingMapper.mapToBooking(bookingRequestDto, userId);
         Booking savedBooking = bookingRepository.save(booking);
 
         log.info("Бронирование с ID={} создано успешно", savedBooking.getId());
 
-        // TODO: получить имена для ответа
-        return bookingMapper.mapToResponseDto(savedBooking, item.getName(), "Имя пользователя");
+        User booker = userService.getUserById(booking.getBookerId());
+        return bookingMapper.mapToResponseDto(savedBooking, item.getName(), booker.getName());
     }
 
     @Override
@@ -65,28 +62,24 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
-        // Получаем вещь
         Item item = itemService.getItemById(booking.getItemId());
 
-        // Проверяем, что пользователь - владелец вещи
         if (!item.getUserId().equals(userId)) {
             throw new UnauthorizedAccessException(
                     String.format("Пользователь с ID=%d не является владельцем вещи", userId));
         }
 
-        // Проверяем, что статус еще WAITING
         if (booking.getStatus() != StatusBooking.WAITING) {
             throw new BookingValidationException("Статус бронирования уже изменен");
         }
 
-        // Обновляем статус
         booking.setStatus(approved ? StatusBooking.APPROVED : StatusBooking.REJECTED);
         Booking updatedBooking = bookingRepository.save(booking);
 
         log.info("Статус бронирования ID={} изменен на {}", bookingId, updatedBooking.getStatus());
 
-        // TODO: получить имена для ответа
-        return bookingMapper.mapToResponseDto(updatedBooking, item.getName(), "Имя пользователя");
+        User booker = userService.getUserById(updatedBooking.getBookerId());
+        return bookingMapper.mapToResponseDto(updatedBooking, item.getName(), booker.getName());
     }
 
     @Override
@@ -97,7 +90,6 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
-        // Получаем вещь
         Item item = itemService.getItemById(booking.getItemId());
 
         // Проверяем права доступа
@@ -106,30 +98,27 @@ public class BookingServiceImpl implements BookingService {
                     String.format("Пользователь с ID=%d не имеет доступа к бронированию", userId));
         }
 
-        // TODO: получить имена для ответа
-        return bookingMapper.mapToResponseDto(booking, item.getName(), "Имя пользователя");
+        User booker = userService.getUserById(booking.getBookerId());
+        return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
     }
 
     @Override
     public List<BookingResponseDto> getUserBookings(Long userId, String state, Integer from, Integer size) {
         log.info("Получение бронирований пользователя ID={} с состоянием {}", userId, state);
 
-        // Проверяем существование пользователя
         userService.getUserById(userId);
 
         List<Booking> bookings = bookingRepository.findByBookerId(userId);
 
-        // Фильтруем по состоянию
         List<Booking> filteredBookings = filterBookingsByState(bookings, state);
 
-        // Пагинация
         List<Booking> paginatedBookings = applyPagination(filteredBookings, from, size);
 
-        // TODO: маппить с именами
         return paginatedBookings.stream()
                 .map(booking -> {
                     Item item = itemService.getItemById(booking.getItemId());
-                    return bookingMapper.mapToResponseDto(booking, item.getName(), "Имя пользователя");
+                    User booker = userService.getUserById(booking.getBookerId());
+                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
                 })
                 .collect(Collectors.toList());
     }
@@ -150,7 +139,8 @@ public class BookingServiceImpl implements BookingService {
         return paginatedBookings.stream()
                 .map(booking -> {
                     Item item = itemService.getItemById(booking.getItemId());
-                    return bookingMapper.mapToResponseDto(booking, item.getName(), "Имя пользователя");
+                    User booker = userService.getUserById(booking.getBookerId());
+                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
                 })
                 .collect(Collectors.toList());
     }
@@ -159,10 +149,10 @@ public class BookingServiceImpl implements BookingService {
     private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
 
         if (item.getUserId().equals(userId)) {
-            throw new BookingNotFoundException("Нельзя забронировать свою вещь");
+            throw new BookingValidationException("Нельзя забронировать свою вещь");
         }
 
-        if (!Boolean.TRUE.equals(item.getAvailable())) {
+        if (item.getAvailable() == null || !item.getAvailable()) {
             throw new BookingValidationException("Вещь недоступна для бронирования");
         }
 
@@ -178,8 +168,6 @@ public class BookingServiceImpl implements BookingService {
         }
 
         List<Booking> existingBookings = bookingRepository.findByItemId(item.getId());
-        LocalDateTime start = bookingRequestDto.getStart();
-        LocalDateTime end = bookingRequestDto.getEnd();
 
         boolean hasOverlap = existingBookings.stream()
                 .filter(b -> b.getStatus() == StatusBooking.APPROVED)
@@ -193,7 +181,9 @@ public class BookingServiceImpl implements BookingService {
     private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
         LocalDateTime now = LocalDateTime.now();
 
-        switch (state.toUpperCase()) {
+        String upperState = state.toUpperCase();
+
+        switch (upperState) {
             case "CURRENT":
                 return bookings.stream()
                         .filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now))
@@ -214,9 +204,14 @@ public class BookingServiceImpl implements BookingService {
                 return bookings.stream()
                         .filter(b -> b.getStatus() == StatusBooking.REJECTED)
                         .collect(Collectors.toList());
+            case "CANCELED":
+                return bookings.stream()
+                        .filter(b -> b.getStatus() == StatusBooking.CANCELED)
+                        .collect(Collectors.toList());
             case "ALL":
-            default:
                 return bookings;
+            default:
+                throw new BookingValidationException("Unknown state: " + state);
         }
     }
 
@@ -227,11 +222,14 @@ public class BookingServiceImpl implements BookingService {
 
         int start = Math.min(from, bookings.size());
         int end = Math.min(start + size, bookings.size());
-
+        if (start >= bookings.size()) {
+            return Collections.emptyList();
+        }
         return bookings.subList(start, end);
     }
-    private boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
-                                  LocalDateTime start2, LocalDateTime end2) {
+
+    private static boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
+                                         LocalDateTime start2, LocalDateTime end2) {
         return start1.isBefore(end2) && start2.isBefore(end1);
     }
 }

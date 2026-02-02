@@ -24,5 +24,4 @@ public interface ItemService {
     Item patchItem(Long userId, Long itemId, Map<String, Object> updates);
 
     List<Item> getItemsByRequestId(Long requestId);
-
 }

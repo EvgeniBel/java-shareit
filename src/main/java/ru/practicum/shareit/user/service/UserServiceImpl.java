@@ -40,12 +40,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUser(Long id, User user) {
         User existingUser = getUserById(id);
-        // Проверяем, меняется ли email
+
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             String newEmail = user.getEmail();
 
             if (!newEmail.equals(existingUser.getEmail())) {
-                // Проверяем, не занят ли новый email другим пользователем
                 repository.findByEmail(newEmail)
                         .ifPresent(userWithSameEmail -> {
                             if (!userWithSameEmail.getId().equals(id)) {
