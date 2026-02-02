@@ -8,8 +8,7 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
-import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.StatusBooking;
+import ru.practicum.shareit.booking.model.*;
 import ru.practicum.shareit.exception.BookingNotFoundException;
 import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -22,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static ru.practicum.shareit.booking.model.BookingStatus.WAITING;
 
 @Service
 @RequiredArgsConstructor
@@ -69,11 +70,11 @@ public class BookingServiceImpl implements BookingService {
                     String.format("Пользователь с ID=%d не является владельцем вещи", userId));
         }
 
-        if (booking.getStatus() != StatusBooking.WAITING) {
+        if (booking.getStatus() != WAITING) {
             throw new BookingValidationException("Статус бронирования уже изменен");
         }
 
-        booking.setStatus(approved ? StatusBooking.APPROVED : StatusBooking.REJECTED);
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
         Booking updatedBooking = bookingRepository.save(booking);
 
         log.info("Статус бронирования ID={} изменен на {}", bookingId, updatedBooking.getStatus());
@@ -92,7 +93,6 @@ public class BookingServiceImpl implements BookingService {
 
         Item item = itemService.getItemById(booking.getItemId());
 
-        // Проверяем права доступа
         if (!booking.getBookerId().equals(userId) && !item.getUserId().equals(userId)) {
             throw new UnauthorizedAccessException(
                     String.format("Пользователь с ID=%d не имеет доступа к бронированию", userId));
@@ -110,17 +110,46 @@ public class BookingServiceImpl implements BookingService {
 
         List<Booking> bookings = bookingRepository.findByBookerId(userId);
 
-        List<Booking> filteredBookings = filterBookingsByState(bookings, state);
+        BookingFilterState bookingState = BookingFilterState.fromString(state);
 
+        List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
         List<Booking> paginatedBookings = applyPagination(filteredBookings, from, size);
 
-        return paginatedBookings.stream()
-                .map(booking -> {
-                    Item item = itemService.getItemById(booking.getItemId());
-                    User booker = userService.getUserById(booking.getBookerId());
-                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
-                })
-                .collect(Collectors.toList());
+        return mapBookingsToResponseDto(paginatedBookings);
+    }
+
+    private List<Booking> filterBookingsByState(List<Booking> bookings, BookingFilterState state) {
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (state) {
+            case CURRENT:
+                return bookings.stream()
+                        .filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now))
+                        .collect(Collectors.toList());
+            case PAST:
+                return bookings.stream()
+                        .filter(b -> b.getEnd().isBefore(now))
+                        .collect(Collectors.toList());
+            case FUTURE:
+                return bookings.stream()
+                        .filter(b -> b.getStart().isAfter(now))
+                        .collect(Collectors.toList());
+            case WAITING:
+                return bookings.stream()
+                        .filter(b -> b.getStatus() == BookingStatus.WAITING)  // Исправлено: BookingStatus
+                        .collect(Collectors.toList());
+            case REJECTED:
+                return bookings.stream()
+                        .filter(b -> b.getStatus() == BookingStatus.REJECTED) // Исправлено: BookingStatus
+                        .collect(Collectors.toList());
+            case CANCELED:
+                return bookings.stream()
+                        .filter(b -> b.getStatus() == BookingStatus.CANCELED) // Исправлено: BookingStatus
+                        .collect(Collectors.toList());
+            case ALL:
+            default:
+                return bookings;
+        }
     }
 
     @Override
@@ -132,17 +161,13 @@ public class BookingServiceImpl implements BookingService {
 
         List<Booking> bookings = bookingRepository.findByItemOwnerId(userId);
 
-        List<Booking> filteredBookings = filterBookingsByState(bookings, state);
+        // Конвертируем строку в enum
+        BookingFilterState bookingState = BookingFilterState.fromString(state);
 
+        List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
         List<Booking> paginatedBookings = applyPagination(filteredBookings, from, size);
 
-        return paginatedBookings.stream()
-                .map(booking -> {
-                    Item item = itemService.getItemById(booking.getItemId());
-                    User booker = userService.getUserById(booking.getBookerId());
-                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
-                })
-                .collect(Collectors.toList());
+        return mapBookingsToResponseDto(paginatedBookings);
     }
 
 
@@ -170,48 +195,11 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> existingBookings = bookingRepository.findByItemId(item.getId());
 
         boolean hasOverlap = existingBookings.stream()
-                .filter(b -> b.getStatus() == StatusBooking.APPROVED)
+                .filter(b -> b.getStatus() == BookingStatus.APPROVED)
                 .anyMatch(b -> isOverlapping(b.getStart(), b.getEnd(), start, end));
 
         if (hasOverlap) {
             throw new BookingValidationException("Вещь уже забронирована на указанные даты");
-        }
-    }
-
-    private List<Booking> filterBookingsByState(List<Booking> bookings, String state) {
-        LocalDateTime now = LocalDateTime.now();
-
-        String upperState = state.toUpperCase();
-
-        switch (upperState) {
-            case "CURRENT":
-                return bookings.stream()
-                        .filter(b -> b.getStart().isBefore(now) && b.getEnd().isAfter(now))
-                        .collect(Collectors.toList());
-            case "PAST":
-                return bookings.stream()
-                        .filter(b -> b.getEnd().isBefore(now))
-                        .collect(Collectors.toList());
-            case "FUTURE":
-                return bookings.stream()
-                        .filter(b -> b.getStart().isAfter(now))
-                        .collect(Collectors.toList());
-            case "WAITING":
-                return bookings.stream()
-                        .filter(b -> b.getStatus() == StatusBooking.WAITING)
-                        .collect(Collectors.toList());
-            case "REJECTED":
-                return bookings.stream()
-                        .filter(b -> b.getStatus() == StatusBooking.REJECTED)
-                        .collect(Collectors.toList());
-            case "CANCELED":
-                return bookings.stream()
-                        .filter(b -> b.getStatus() == StatusBooking.CANCELED)
-                        .collect(Collectors.toList());
-            case "ALL":
-                return bookings;
-            default:
-                throw new BookingValidationException("Unknown state: " + state);
         }
     }
 
@@ -231,5 +219,14 @@ public class BookingServiceImpl implements BookingService {
     private static boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
                                          LocalDateTime start2, LocalDateTime end2) {
         return start1.isBefore(end2) && start2.isBefore(end1);
+    }
+    private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
+        return bookings.stream()
+                .map(booking -> {
+                    Item item = itemService.getItemById(booking.getItemId());
+                    User booker = userService.getUserById(booking.getBookerId());
+                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
+                })
+                .collect(Collectors.toList());
     }
 }

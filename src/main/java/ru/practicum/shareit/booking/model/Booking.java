@@ -17,5 +17,5 @@ public class Booking {
     private LocalDateTime end;
     private Long itemId;
     private Long bookerId;
-    private StatusBooking status;
+    private BookingStatus status;
 }

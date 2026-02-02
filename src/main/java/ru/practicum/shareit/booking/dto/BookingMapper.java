@@ -2,7 +2,7 @@ package ru.practicum.shareit.booking.dto;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.StatusBooking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 
 @Component
 public class BookingMapper {
@@ -12,7 +12,7 @@ public class BookingMapper {
                 .end(bookingRequestDto.getEnd())
                 .itemId(bookingRequestDto.getItemId())
                 .bookerId(bookerId)
-                .status(StatusBooking.WAITING)
+                .status(BookingStatus.WAITING)
                 .build();
     }
 
