@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
 
     @Override
     public List<Item> getItems(long userId) {
@@ -35,6 +37,14 @@ public class ItemServiceImpl implements ItemService {
         }
         if (item.getAvailable() == null) {
             throw new IllegalArgumentException("Поле available обязательно");
+        }
+        if (item.getRequestId() != null) {
+            var request = itemRequestRepository.findById(item.getRequestId())
+                    .orElseThrow(() -> new NotFoundException("Запрос не найден"));
+
+            if (request.getRequestorId().equals(userId)) {
+                throw new IllegalArgumentException("Нельзя создать вещь для своего же запроса");
+            }
         }
 
         item.setUserId(userId);
@@ -104,4 +114,13 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository.save(existingItem);
     }
 
+    @Override
+    public List<Item> getItemsByRequestId(Long requestId) {
+        if (requestId != null) {
+            itemRequestRepository.findById(requestId)
+                    .orElseThrow(() -> new NotFoundException("Запрос не найден"));
+        }
+
+        return itemRepository.findByRequestId(requestId);
+    }
 }

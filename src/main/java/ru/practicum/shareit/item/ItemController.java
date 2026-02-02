@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
@@ -12,9 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * TODO Sprint add-controllers.
- */
 @RestController
 @RequestMapping("/items")
 @AllArgsConstructor
@@ -36,6 +34,7 @@ public class ItemController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ItemDto addNewItem(@RequestHeader("X-Sharer-User-Id") Long userId,
                               @Valid @RequestBody ItemDto itemDto) {
         var item = itemMapper.mapToItem(itemDto);
@@ -44,6 +43,7 @@ public class ItemController {
     }
 
     @DeleteMapping("/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@RequestHeader("X-Sharer-User-Id") long userId,
                        @PathVariable(name = "itemId") long itemId) {
         itemService.deleteItem(userId, itemId);
@@ -58,11 +58,11 @@ public class ItemController {
         var updatedItem = itemService.updateItem(userId, item);
         return itemMapper.mapToDto(updatedItem);
     }
+
     @PatchMapping("/{itemId}")
     public ItemDto patchItem(@RequestHeader("X-Sharer-User-Id") Long userId,
                              @PathVariable Long itemId,
                              @RequestBody Map<String, Object> updates) {
-        // Логика частичного обновления
         Item updatedItem = itemService.patchItem(userId, itemId, updates);
         return itemMapper.mapToDto(updatedItem);
     }

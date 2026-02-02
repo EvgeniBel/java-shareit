@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 public class ItemRepository {
 
     private final Map<Long, List<Item>> userItems = new HashMap<>();
+    private final Map<Long, Item> itemsById = new HashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
 
     public List<Item> findByUserId(Long userId) {
@@ -18,10 +19,7 @@ public class ItemRepository {
     }
 
     public Optional<Item> findById(Long itemId) {
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> item.getId().equals(itemId))
-                .findFirst();
+        return Optional.ofNullable(itemsById.get(itemId));
     }
 
     public Item save(Item item) {
@@ -45,6 +43,7 @@ public class ItemRepository {
         }
 
         userItems.put(userId, items);
+        itemsById.put(item.getId(), item);
         return item;
     }
 
@@ -54,19 +53,39 @@ public class ItemRepository {
             items.removeIf(item -> item.getId().equals(itemId));
             userItems.put(userId, items);
         }
+        itemsById.remove(itemId);
     }
 
-       public List<Item> searchItems(String text) {
-           if (text == null || text.isBlank()) {
-               return new ArrayList<>();
-           }
+    public List<Item> searchItems(String text) {
+        if (text == null || text.isBlank()) {
+            return new ArrayList<>();
+        }
 
-           String searchText = text.toLowerCase();
-           return userItems.values().stream()
-                   .flatMap(List::stream)
-                   .filter(item -> item.getName().toLowerCase().contains(searchText) ||
-                           item.getDescription().toLowerCase().contains(searchText))
-                   .filter(item -> Boolean.TRUE.equals(item.getAvailable())) // ДОБАВИТЬ ЭТО
-                   .collect(Collectors.toList());
-       }
+        String searchText = text.toLowerCase();
+        return userItems.values().stream()
+                .flatMap(List::stream)
+                .filter(item -> item.getName().toLowerCase().contains(searchText) ||
+                        item.getDescription().toLowerCase().contains(searchText))
+                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
+                .collect(Collectors.toList());
+    }
+
+
+    public List<Item> findByRequestId(Long requestId) {
+        if (requestId == null) {
+            return new ArrayList<>();
+        }
+
+        return userItems.values().stream()
+                .flatMap(List::stream)
+                .filter(item -> requestId.equals(item.getRequestId()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Item> findItemsWithRequests() {
+        return userItems.values().stream()
+                .flatMap(List::stream)
+                .filter(item -> item.getRequestId() != null)
+                .collect(Collectors.toList());
+    }
 }

@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
+import ru.practicum.shareit.request.service.ItemRequestService;
 
 import java.util.List;
 
@@ -15,20 +17,21 @@ import java.util.List;
 @RequestMapping(path = "/requests")
 @RequiredArgsConstructor
 public class ItemRequestController {
+    private final ItemRequestService itemRequestService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemRequestDto createItemRequest(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @Valid @RequestBody ItemRequestDto itemRequestDto) {
-
-        return null;
+        return itemRequestService.createItemRequest(userId, itemRequestDto);
     }
 
     @GetMapping
-    public List<ItemRequestDto> getUserItemRequests(
+    public List<ItemRequestWithItemsDto> getUserItemRequests(
             @RequestHeader("X-Sharer-User-Id") Long userId) {
-        // TODO: реализовать логику
+        // Возвращаем запросы с вещами
+        // TODO: нужно добавить метод в сервисе
         return List.of();
     }
 
@@ -37,14 +40,15 @@ public class ItemRequestController {
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @RequestParam(defaultValue = "0") Integer from,
             @RequestParam(defaultValue = "10") Integer size) {
-        return List.of();
+        return itemRequestService.getAllItemRequests(userId, from, size);
     }
 
     @GetMapping("/{requestId}")
-    public ItemRequestDto getItemRequest(
+    public ItemRequestWithItemsDto getItemRequest(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @PathVariable Long requestId) {
-        // TODO: реализовать логику
+        // Возвращаем запрос с вещами
+        // TODO: нужно добавить метод в сервисе
         return null;
     }
 }

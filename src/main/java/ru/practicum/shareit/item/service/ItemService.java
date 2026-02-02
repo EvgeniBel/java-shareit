@@ -22,4 +22,7 @@ public interface ItemService {
     List<Item> searchItems(String text);
 
     Item patchItem(Long userId, Long itemId, Map<String, Object> updates);
+
+    List<Item> getItemsByRequestId(Long requestId);
+
 }
