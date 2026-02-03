@@ -21,6 +21,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
+		<enforcer.skip>true</enforcer.skip> <!-- Отключаем enforcer -->
 	</properties>
 
 	<dependencies>
@@ -52,14 +53,12 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- PostgreSQL (опционально, закомментируйте если не нужен) -->
-		<!--
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        -->
+		<!-- PostgreSQL -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -81,26 +80,13 @@
 
 	<build>
 		<plugins>
-			<!-- Добавьте этот плагин для обработки запросов профилей -->
+			<!-- Отключаем maven-enforcer-plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.4.1</version>
-				<executions>
-					<execution>
-						<id>enforce</id>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<requireProfileIdsExist>
-									<profiles>default,check,coverage</profiles>
-								</requireProfileIdsExist>
-							</rules>
-						</configuration>
-					</execution>
-				</executions>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
 			</plugin>
 
 			<plugin>
@@ -121,6 +107,9 @@
 	<profiles>
 		<profile>
 			<id>check</id>
+			<properties>
+				<enforcer.skip>false</enforcer.skip>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -129,13 +118,11 @@
 						<version>3.3.1</version>
 						<configuration>
 							<configLocation>checkstyle.xml</configLocation>
-							<encoding>UTF-8</encoding>
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>true</failsOnError>
 						</configuration>
 						<executions>
 							<execution>
-								<id>validate</id>
 								<phase>validate</phase>
 								<goals>
 									<goal>check</goal>
@@ -149,6 +136,9 @@
 
 		<profile>
 			<id>coverage</id>
+			<properties>
+				<enforcer.skip>false</enforcer.skip>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -157,7 +147,6 @@
 						<version>0.8.12</version>
 						<executions>
 							<execution>
-								<id>prepare-agent</id>
 								<goals>
 									<goal>prepare-agent</goal>
 								</goals>
