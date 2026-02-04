@@ -1,21 +1,20 @@
 package ru.practicum.shareit.booking.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class Booking {
-    private Long id;
-    private LocalDateTime start;
-    private LocalDateTime end;
-    private Long itemId;
-    private Long bookerId;
-    private BookingStatus status;
+    Long id;
+    LocalDateTime start;
+    LocalDateTime end;
+    Long itemId;
+    Long bookerId;
+    BookingStatus status;
 }

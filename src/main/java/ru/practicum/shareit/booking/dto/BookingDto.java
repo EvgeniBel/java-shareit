@@ -3,33 +3,31 @@ package ru.practicum.shareit.booking.dto;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import ru.practicum.shareit.booking.model.BookingStatus;
 
 import java.time.LocalDateTime;
 
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingDto {
-
-    private Long id;
+    Long id;
 
     @NotNull(message = "Дата начала не может быть null")
     @FutureOrPresent(message = "Дата начала должна быть в будущем или настоящем")
-    private LocalDateTime start;
+    LocalDateTime start;
 
     @NotNull(message = "Дата окончания не может быть null")
     @Future(message = "Дата окончания должна быть в будущем")
-    private LocalDateTime end;
+    LocalDateTime end;
 
     @NotNull(message = "ID вещи не может быть null")
-    private Long itemId;
+    Long itemId;
 
-    private Long bookerId;
-    private BookingStatus status;
+    Long bookerId;
+    BookingStatus status;
 }
