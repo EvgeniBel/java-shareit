@@ -46,7 +46,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
-    public List<ItemRequestDto> getAllItemRequests(Long userId, Integer from, Integer size) {
+    public List<ItemRequestWithItemsDto> getAllItemRequests(Long userId, Integer from, Integer size) {
         if (from < 0) {
             throw new IllegalArgumentException("Параметр 'from' не может быть отрицательным");
         }
@@ -66,7 +66,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         List<ItemRequest> paginatedRequests = allRequests.subList(start, end);
 
         return paginatedRequests.stream()
-                .map(itemRequestMapper::mapToDto)
+                .map(this::buildItemRequestWithItemsDto)
                 .collect(Collectors.toList());
     }
 

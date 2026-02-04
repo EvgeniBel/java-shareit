@@ -1,6 +1,7 @@
 package ru.practicum.shareit.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,13 @@ public class ItemRequestController {
     }
 
     @GetMapping("/all")
-    public List<ItemRequestDto> getAllItemRequests(
-            @RequestHeader("X-Sharer-User-Id") Long userId,
-            @RequestParam(defaultValue = "0") Integer from,
-            @RequestParam(defaultValue = "10") Integer size) {
+    public List<ItemRequestWithItemsDto> getAllItemRequests(
+    @RequestHeader("X-Sharer-User-Id") Long userId,
+    @RequestParam(defaultValue = "0") @Min(value = 0, message = "Параметр 'from' не может быть отрицательным") Integer from,
+    @RequestParam(defaultValue = "10") @Min(value = 1, message = "Параметр 'size' должен быть положительным") Integer size) {
         return itemRequestService.getAllItemRequests(userId, from, size);
     }
+
 
     @GetMapping("/{requestId}")
     public ItemRequestWithItemsDto getItemRequest(
