@@ -15,25 +15,27 @@ import java.util.List;
 @RequestMapping(path = "/requests")
 @RequiredArgsConstructor
 public class ItemRequestController {
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final ItemRequestService itemRequestService;
+
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemRequestDto createItemRequest(
-            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @RequestHeader(USER_ID_HEADER) Long userId,
             @Valid @RequestBody ItemRequestDto itemRequestDto) {
         return itemRequestService.createItemRequest(userId, itemRequestDto);
     }
 
     @GetMapping
     public List<ItemRequestWithItemsDto> getUserItemRequests(
-            @RequestHeader("X-Sharer-User-Id") Long userId) {
+            @RequestHeader(USER_ID_HEADER) Long userId) {
         return itemRequestService.getUserItemRequests(userId);
     }
 
     @GetMapping("/all")
     public List<ItemRequestWithItemsDto> getAllItemRequests(
-    @RequestHeader("X-Sharer-User-Id") Long userId,
+    @RequestHeader(USER_ID_HEADER) Long userId,
     @RequestParam(defaultValue = "0") @Min(value = 0, message = "Параметр 'from' не может быть отрицательным") Integer from,
     @RequestParam(defaultValue = "10") @Min(value = 1, message = "Параметр 'size' должен быть положительным") Integer size) {
         return itemRequestService.getAllItemRequests(userId, from, size);
@@ -42,7 +44,7 @@ public class ItemRequestController {
 
     @GetMapping("/{requestId}")
     public ItemRequestWithItemsDto getItemRequest(
-            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @RequestHeader(USER_ID_HEADER) Long userId,
             @PathVariable Long requestId) {
         return itemRequestService.getItemRequest(userId, requestId);
     }
