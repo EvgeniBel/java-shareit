@@ -1,21 +1,22 @@
 package ru.practicum.shareit.request.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemRequestDto {
+public class ItemRequestWithItemsDto {
     Long id;
-
-    @NotBlank(message = "Описание запроса не может быть пустым")
     String description;
     Long requestorId;
     LocalDateTime created;
+    List<ItemDto> items;
 }
+
