@@ -1,6 +1,11 @@
 package ru.practicum.shareit.user;
 
+import org.hibernate.sql.ast.tree.expression.JdbcParameter;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.ArrayList;
@@ -10,46 +15,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
-public class UserRepository {
-    private final ConcurrentHashMap<Long, User> users = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> emailToIdMap = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+public interface UserRepository extends JpaRepository<User, Long> {
+    // Поиск пользователя по email (точное совпадение)
+    Optional<User> findByEmail(String email);
 
-    public List<User> findAll() {
-        return new ArrayList<>(users.values());
-    }
+    // Проверка существования email
+    boolean existsByEmail(String email);
 
-    public Optional<User> findById(Long userId) {
-        return Optional.ofNullable(users.get(userId));
-    }
+    // Проверка существования email у другого пользователя
+    @Query("SELECT COUNT(u) > 0 FROM User u " +
+            "WHERE u.email = :email AND u.id != :userId")
+    boolean existsByEmailAndIdNot(@Param("email") String email,
+                                  @Param("userId") Long userId);
 
-    public User save(User user) {
-        if (user.getId() == null) {
-            user.setId(idGenerator.getAndIncrement());
-        }
+    // Поиск пользователей по части email (для админки)
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))")
+    List<User> findByEmailContaining(@Param("email") String email);
 
-        if (users.containsKey(user.getId())) {
-            User existingUser = users.get(user.getId());
-            if (!existingUser.getEmail().equals(user.getEmail())) {
-                emailToIdMap.remove(existingUser.getEmail());
-            }
-        }
-
-        users.put(user.getId(), user);
-        emailToIdMap.put(user.getEmail(), user.getId());
-        return user;
-    }
-
-    public void deleteUser(Long userId) {
-        User user = users.get(userId);
-        if (user != null) {
-            emailToIdMap.remove(user.getEmail());
-            users.remove(userId);
-        }
-    }
-
-    public Optional<User> findByEmail(String email) {
-        Long userId = emailToIdMap.get(email);
-        return userId != null ? Optional.ofNullable(users.get(userId)) : Optional.empty();
-    }
+    // Поиск пользователей по части имени
+    @Query("SELECT u FROM User u WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    List<User> findByNameContaining(@Param("name") String name);
 }

@@ -1,91 +1,49 @@
 package ru.practicum.shareit.item;
 
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Repository
-public class ItemRepository {
+public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    private final Map<Long, List<Item>> userItems = new HashMap<>();
-    private final Map<Long, Item> itemsById = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    // Поиск вещей по владельцу с пагинацией
+    List<Item> findByUserIdOrderByIdAsc(Long userId, Pageable pageable);
 
-    public List<Item> findByUserId(Long userId) {
-        return userItems.getOrDefault(userId, new ArrayList<>());
-    }
+    // Поиск вещей по владельцу без пагинации
+    List<Item> findByUserId(Long userId);
 
-    public Optional<Item> findById(Long itemId) {
-        return Optional.ofNullable(itemsById.get(itemId));
-    }
+    // Поиск по тексту в названии и описании (только доступные вещи)
+    @Query("SELECT i FROM Item i " +
+            "WHERE (LOWER(i.name) LIKE LOWER(CONCAT('%', :text, '%')) " +
+            "OR LOWER(i.description) LIKE LOWER(CONCAT('%', :text, '%'))) " +
+            "AND i.available = true " +
+            "ORDER BY i.id ASC")
+    List<Item> search(@Param("text") String text, Pageable pageable);
 
-    public Item save(Item item) {
-        if (item.getId() == null) {
-            item.setId(idGenerator.getAndIncrement());
-        }
-        long userId = item.getUserId();
-        List<Item> items = userItems.getOrDefault(userId, new ArrayList<>());
+    // Поиск по ID запроса (для вещей, созданных по запросу)
+    List<Item> findByRequestId(Long requestId);
 
-        boolean exists = false;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(item.getId())) {
-                items.set(i, item);
-                exists = true;
-                break;
-            }
-        }
+    // Поиск всех вещей с непустым requestId
+    @Query("SELECT i FROM Item i WHERE i.requestId IS NOT NULL")
+    List<Item> findItemsWithRequests();
 
-        if (!exists) {
-            items.add(item);
-        }
+    // Поиск по нескольким ID запросов
+    @Query("SELECT i FROM Item i WHERE i.requestId IN :requestIds")
+    List<Item> findByRequestIdIn(@Param("requestIds") List<Long> requestIds);
 
-        userItems.put(userId, items);
-        itemsById.put(item.getId(), item);
-        return item;
-    }
+    // Проверка существования вещи у пользователя
+    boolean existsByIdAndUserId(Long id, Long userId);
 
-    public void deleteByUserIdAndItemId(long userId, long itemId) {
-        List<Item> items = userItems.get(userId);
-        if (items != null) {
-            items.removeIf(item -> item.getId().equals(itemId));
-            userItems.put(userId, items);
-        }
-        itemsById.remove(itemId);
-    }
+    // Удаление вещи по ID пользователя и ID вещи
+    void deleteByIdAndUserId(Long id, Long userId);
 
-    public List<Item> searchItems(String text) {
-        if (text == null || text.isBlank()) {
-            return new ArrayList<>();
-        }
-
-        String searchText = text.toLowerCase();
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> item.getName().toLowerCase().contains(searchText) ||
-                        item.getDescription().toLowerCase().contains(searchText))
-                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
-                .collect(Collectors.toList());
-    }
-
-
-    public List<Item> findByRequestId(Long requestId) {
-        if (requestId == null) {
-            return new ArrayList<>();
-        }
-
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> requestId.equals(item.getRequestId()))
-                .collect(Collectors.toList());
-    }
-
-    public List<Item> findItemsWithRequests() {
-        return userItems.values().stream()
-                .flatMap(List::stream)
-                .filter(item -> item.getRequestId() != null)
-                .collect(Collectors.toList());
-    }
+    // Подсчет количества вещей у пользователя
+    long countByUserId(Long userId);
 }

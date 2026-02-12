@@ -6,12 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/items")
@@ -22,10 +19,10 @@ public class ItemController {
     private final ItemMapper itemMapper;
 
     @GetMapping
-    public List<ItemDto> getItems(@RequestHeader(USER_ID_HEADER) long userId) {
-        return itemService.getItems(userId).stream()
-                .map(itemMapper::mapToDto)
-                .collect(Collectors.toList());
+    public List<ItemDto> getItems(@RequestHeader(USER_ID_HEADER) Long userId,
+                                  @RequestParam(defaultValue = "0") Integer from,
+                                  @RequestParam(defaultValue = "10") Integer size) {
+        return itemService.getUserItems(userId, from, size);
     }
 
     @GetMapping("/{itemId}")
@@ -36,42 +33,29 @@ public class ItemController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemDto addNewItem(@RequestHeader(USER_ID_HEADER) Long userId,
+    public ItemDto createItem(@RequestHeader(USER_ID_HEADER) Long userId,
                               @Valid @RequestBody ItemDto itemDto) {
-        var item = itemMapper.mapToItem(itemDto);
-        var savedItem = itemService.addNewItem(userId, item);
-        return itemMapper.mapToDto(savedItem);
+        return itemService.createItem(userId, itemDto);
     }
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@RequestHeader(USER_ID_HEADER) long userId,
-                       @PathVariable(name = "itemId") long itemId) {
+    public void deleteItem(@RequestHeader(USER_ID_HEADER) Long userId,
+                           @PathVariable Long itemId) {
         itemService.deleteItem(userId, itemId);
     }
 
-    @PutMapping("/{itemId}")
+    @PatchMapping("/{itemId}")
     public ItemDto updateItem(@RequestHeader(USER_ID_HEADER) Long userId,
                               @PathVariable Long itemId,
-                              @Valid @RequestBody ItemDto itemDto) {
-        var item = itemMapper.mapToItem(itemDto);
-        item.setId(itemId);
-        var updatedItem = itemService.updateItem(userId, item);
-        return itemMapper.mapToDto(updatedItem);
-    }
-
-    @PatchMapping("/{itemId}")
-    public ItemDto patchItem(@RequestHeader(USER_ID_HEADER) Long userId,
-                             @PathVariable Long itemId,
-                             @RequestBody Map<String, Object> updates) {
-        Item updatedItem = itemService.patchItem(userId, itemId, updates);
-        return itemMapper.mapToDto(updatedItem);
+                              @RequestBody ItemDto itemDto) {
+        return itemService.updateItem(userId, itemId, itemDto);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchItems(@RequestParam String text) {
-        return itemService.searchItems(text).stream()
-                .map(itemMapper::mapToDto)
-                .collect(Collectors.toList());
+    public List<ItemDto> searchItems(@RequestParam String text,
+                                     @RequestParam(defaultValue = "0") Integer from,
+                                     @RequestParam(defaultValue = "10") Integer size) {
+        return itemService.searchItems(text, from, size);
     }
 }

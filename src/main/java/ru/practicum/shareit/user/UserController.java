@@ -22,28 +22,22 @@ public class UserController {
 
     @GetMapping
     public List<UserDto> getAllUsers() {
-        return userService.getAllUsers().stream()
-                .map(userMapper::mapToDto)
-                .collect(Collectors.toList());
+        return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
     public UserDto getUserById(@PathVariable Long id) {
-        return userMapper.mapToDto(userService.getUserById(id));
+       return userService.getUserById(id);
     }
 
     @PostMapping
     public UserDto createUser(@Valid @RequestBody UserDto userDto) {
-        User user = userMapper.mapToUser(userDto);
-        User createdUser = userService.createUser(user);
-        return userMapper.mapToDto(createdUser);
+        return userService.createUser(userDto);
     }
 
     @PatchMapping("/{id}")
     public UserDto updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
-        User user = userMapper.mapToUser(userDto);
-        User updatedUser = userService.updateUser(id, user);
-        return userMapper.mapToDto(updatedUser);
+        return userService.updateUser(id, userDto);
     }
 
     @DeleteMapping("/{id}")
