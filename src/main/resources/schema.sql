@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS items (
     user_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description VARCHAR(1000) NOT NULL,
-    available BOOLEAN NOT NULL,
+    is_available BOOLEAN NOT NULL,
     request_id BIGINT,
     CONSTRAINT fk_items_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
