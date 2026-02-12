@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
@@ -41,8 +43,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponseDto createBooking(Long userId, BookingRequestDto bookingRequestDto) {
         log.info("Создание бронирования пользователем с ID={}", userId);
 
-        userService.getUserById(userId);
-
+        User booker = userService.getUserModelById(userId);
         Item item = itemService.getItemById(bookingRequestDto.getItemId());
 
         validateBookingCreation(userId, item, bookingRequestDto);
@@ -52,7 +53,6 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Бронирование с ID={} создано успешно", savedBooking.getId());
 
-        User booker = userService.getUserById(booking.getBookerId());
         return bookingMapper.mapToResponseDto(savedBooking, item.getName(), booker.getName());
     }
 
@@ -72,7 +72,7 @@ public class BookingServiceImpl implements BookingService {
                     String.format("Пользователь с ID=%d не является владельцем вещи", userId));
         }
 
-        if (booking.getStatus() != WAITING) {
+        if (booking.getStatus() != BookingStatus.WAITING) {
             throw new BookingValidationException("Статус бронирования уже изменен");
         }
 
@@ -81,7 +81,7 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Статус бронирования ID={} изменен на {}", bookingId, updatedBooking.getStatus());
 
-        User booker = userService.getUserById(updatedBooking.getBookerId());
+        User booker = userService.getUserModelById(updatedBooking.getBookerId());
         return bookingMapper.mapToResponseDto(updatedBooking, item.getName(), booker.getName());
     }
 
@@ -100,24 +100,24 @@ public class BookingServiceImpl implements BookingService {
                     String.format("Пользователь с ID=%d не имеет доступа к бронированию", userId));
         }
 
-        User booker = userService.getUserById(booking.getBookerId());
+        User booker = userService.getUserModelById(booking.getBookerId());
         return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
     }
 
     @Override
     public List<BookingResponseDto> getUserBookings(Long userId, String state, Integer from, Integer size) {
+
         log.info("Получение бронирований пользователя ID={} с состоянием {}", userId, state);
 
-        userService.getUserById(userId);
+        userService.getUserModelById(userId);
 
-        List<Booking> bookings = bookingRepository.findByBookerId(userId);
-
+        Pageable pageable = PageRequest.of(from / size, size);
         BookingFilterState bookingState = BookingFilterState.fromString(state);
 
+        List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId, pageable);
         List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
-        List<Booking> paginatedBookings = applyPagination(filteredBookings, from, size);
 
-        return mapBookingsToResponseDto(paginatedBookings);
+        return mapBookingsToResponseDto(filteredBookings);
     }
 
     private List<Booking> filterBookingsByState(List<Booking> bookings, BookingFilterState state) {
@@ -159,20 +159,18 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Получение бронирований владельца ID={} с состоянием {}", userId, state);
 
-        userService.getUserById(userId);
+        userService.getUserModelById(userId);
 
-        List<Booking> bookings = bookingRepository.findByItemOwnerId(userId);
-
+        Pageable pageable = PageRequest.of(from / size, size);
         BookingFilterState bookingState = BookingFilterState.fromString(state);
 
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerId(userId, pageable);
         List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
-        List<Booking> paginatedBookings = applyPagination(filteredBookings, from, size);
 
-        return mapBookingsToResponseDto(paginatedBookings);
+        return mapBookingsToResponseDto(filteredBookings);
     }
 
     private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
-
         if (item.getUserId().equals(userId)) {
             throw new BookingValidationException("Нельзя забронировать свою вещь");
         }
@@ -192,43 +190,21 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingValidationException("Дата начала и окончания не могут совпадать");
         }
 
-        List<Booking> existingBookings = bookingRepository.findByItemId(item.getId());
+        List<Booking> overlappingBookings = bookingRepository.findOverlappingApprovedBookings(
+                item.getId(), start, end);
 
-        boolean hasOverlap = existingBookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.APPROVED)
-                .anyMatch(b -> isOverlapping(b.getStart(), b.getEnd(), start, end));
-
-        if (hasOverlap) {
+        if (!overlappingBookings.isEmpty()) {
             throw new BookingValidationException("Вещь уже забронирована на указанные даты");
         }
-    }
-
-    private List<Booking> applyPagination(List<Booking> bookings, Integer from, Integer size) {
-        if (from < 0 || size <= 0) {
-            throw new IllegalArgumentException("Некорректные параметры пагинации");
-        }
-
-        int start = Math.min(from, bookings.size());
-        int end = Math.min(start + size, bookings.size());
-        if (start >= bookings.size()) {
-            return Collections.emptyList();
-        }
-        return bookings.subList(start, end);
     }
 
     private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
         return bookings.stream()
                 .map(booking -> {
                     Item item = itemService.getItemById(booking.getItemId());
-                    User booker = userService.getUserById(booking.getBookerId());
+                    User booker = userService.getUserModelById(booking.getBookerId());
                     return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
                 })
                 .collect(Collectors.toList());
     }
-
-    private static boolean isOverlapping(LocalDateTime start1, LocalDateTime end1,
-                                         LocalDateTime start2, LocalDateTime end2) {
-        return start1.isBefore(end2) && start2.isBefore(end1);
-    }
-
 }
