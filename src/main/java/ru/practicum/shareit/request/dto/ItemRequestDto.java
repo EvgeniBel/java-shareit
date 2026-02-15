@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class ItemRequestDto {
     Long id;
 
-    @NotBlank(message = "Описание запроса не может быть пустым")
+    @NotBlank(message = "Описание запроса не может быть пустым!")
     String description;
     Long requestorId;
     LocalDateTime created;
