@@ -35,9 +35,9 @@ public class ItemRequestController {
 
     @GetMapping("/all")
     public List<ItemRequestWithItemsDto> getAllItemRequests(
-    @RequestHeader(USER_ID_HEADER) Long userId,
-    @RequestParam(defaultValue = "0") @Min(value = 0, message = "Параметр 'from' не может быть отрицательным") Integer from,
-    @RequestParam(defaultValue = "10") @Min(value = 1, message = "Параметр 'size' должен быть положительным") Integer size) {
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Параметр 'from' не может быть отрицательным") Integer from,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "Параметр 'size' должен быть положительным") Integer size) {
         return itemRequestService.getAllItemRequests(userId, from, size);
     }
 
