@@ -256,6 +256,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
@@ -267,8 +268,8 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
-        // Проверяем, что пользователь действительно брал вещь в аренду
-        boolean hasBooked = bookingRepository.existsByBookerIdAndItemIdAndEndBefore(
+        // ПРАВИЛЬНО: используем метод с проверкой статуса APPROVED
+        boolean hasBooked = bookingRepository.hasUserBookedAndApproved(
                 userId, itemId, LocalDateTime.now());
 
         if (!hasBooked) {

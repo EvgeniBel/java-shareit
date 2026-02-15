@@ -40,4 +40,24 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findFirstByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime start);
 
     boolean existsByBookerIdAndItemIdAndEndBefore(Long bookerId, Long itemId, LocalDateTime end);
+
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END " +
+            "FROM Booking b " +
+            "WHERE b.bookerId = :bookerId " +  // bookerId, не booker.id
+            "AND b.itemId = :itemId " +        // itemId, не item.id
+            "AND b.end < :now " +
+            "AND b.status = 'APPROVED'")
+    boolean hasUserBookedItem(@Param("bookerId") Long bookerId,
+                              @Param("itemId") Long itemId,
+                              @Param("now") LocalDateTime now);
+
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END " +
+            "FROM Booking b " +
+            "WHERE b.bookerId = :bookerId " +  // bookerId
+            "AND b.itemId = :itemId " +        // itemId
+            "AND b.end < :now " +
+            "AND b.status = 'APPROVED'")
+    boolean hasUserBookedAndApproved(@Param("bookerId") Long bookerId,
+                                     @Param("itemId") Long itemId,
+                                     @Param("now") LocalDateTime now);
 }
