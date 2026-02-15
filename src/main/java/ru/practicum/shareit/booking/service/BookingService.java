@@ -17,4 +17,5 @@ public interface BookingService {
 
     List<BookingResponseDto> getOwnerBookings(Long userId, String state, Integer from, Integer size);
 
+    BookingResponseDto cancelBooking(Long userId, Long bookingId);
 }

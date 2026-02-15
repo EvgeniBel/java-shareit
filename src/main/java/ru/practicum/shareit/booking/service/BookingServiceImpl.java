@@ -6,8 +6,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.dto.BookingMapper;
+import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
@@ -17,9 +17,9 @@ import ru.practicum.shareit.exception.BookingNotFoundException;
 import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
-import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.item.dto.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
@@ -30,8 +30,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static ru.practicum.shareit.booking.model.BookingStatus.WAITING;
 
 @Service
 @RequiredArgsConstructor
@@ -137,7 +135,11 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId, pageable);
         List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
 
-        return mapBookingsToResponseDto(filteredBookings);
+        return bookingMapper.mapToResponseDtoList(
+                filteredBookings,
+                this::getItemDtoById,
+                this::getUserDtoById
+        );
     }
 
     @Override
@@ -154,7 +156,52 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> bookings = bookingRepository.findAllByItemOwnerId(userId, pageable);
         List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
 
-        return mapBookingsToResponseDto(filteredBookings);
+        return bookingMapper.mapToResponseDtoList(
+                filteredBookings,
+                this::getItemDtoById,
+                this::getUserDtoById
+        );
+    }
+
+    @Transactional
+    public BookingResponseDto cancelBooking(Long userId, Long bookingId) {
+        log.info("Отмена бронирования ID={} пользователем ID={}", bookingId, userId);
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(
+                        String.format("Бронирование с ID=%d не найдено", bookingId)));
+
+        // Только автор бронирования может отменить
+        if (!booking.getBookerId().equals(userId)) {
+            throw new UnauthorizedAccessException(
+                    String.format("Пользователь с ID=%d не является автором бронирования", userId));
+        }
+
+        // Можно отменить только ожидающие бронирования
+        if (booking.getStatus() != BookingStatus.WAITING) {
+            throw new BookingValidationException("Можно отменить только бронирования в статусе WAITING");
+        }
+
+        booking.setStatus(BookingStatus.CANCELED);
+        Booking updatedBooking = bookingRepository.save(booking);
+
+        Item item = getItemModelById(updatedBooking.getItemId());
+        User booker = userService.getUserModelById(updatedBooking.getBookerId());
+        ItemDto itemDto = itemMapper.mapToDto(item);
+        UserDto userDto = userMapper.mapToDto(booker);
+
+        return bookingMapper.mapToResponseDto(updatedBooking, itemDto, userDto);
+    }
+
+    // Вспомогательные методы для получения DTO
+    private ItemDto getItemDtoById(Long itemId) {
+        Item item = getItemModelById(itemId);
+        return itemMapper.mapToDto(item);
+    }
+
+    private UserDto getUserDtoById(Long userId) {
+        User user = userService.getUserModelById(userId);
+        return userMapper.mapToDto(user);
     }
 
     private Item getItemModelById(Long itemId) {
@@ -199,20 +246,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
-        return bookings.stream()
-                .map(booking -> {
-                    Item item = getItemModelById(booking.getItemId());  // ИСПРАВЛЕНО
-                    User user = userService.getUserModelById(booking.getBookerId());
-
-                    ItemDto itemDto = itemMapper.mapToDto(item);
-                    UserDto userDto = userMapper.mapToDto(user);
-
-                    return bookingMapper.mapToResponseDto(booking, itemDto, userDto);
-                })
-                .collect(Collectors.toList());
-    }
-
     private List<Booking> filterBookingsByState(List<Booking> bookings, BookingFilterState state) {
         if (bookings == null || bookings.isEmpty()) {
             return Collections.emptyList();
@@ -240,6 +273,10 @@ public class BookingServiceImpl implements BookingService {
             case REJECTED:
                 return bookings.stream()
                         .filter(b -> b.getStatus() == BookingStatus.REJECTED)
+                        .collect(Collectors.toList());
+            case CANCELED:
+                return bookings.stream()
+                        .filter(b -> b.getStatus() == BookingStatus.CANCELED)
                         .collect(Collectors.toList());
             case ALL:
             default:

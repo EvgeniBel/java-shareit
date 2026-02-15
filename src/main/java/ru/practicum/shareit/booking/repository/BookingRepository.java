@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking;
+package ru.practicum.shareit.booking.repository;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,12 +32,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findOverlappingApprovedBookings(@Param("itemId") Long itemId,
                                                   @Param("startDate") LocalDateTime startDate,
                                                   @Param("endDate") LocalDateTime endDate);
-
-    // Для комментариев - бронировал ли пользователь вещь
-    boolean existsByBookerIdAndItemIdAndStatusAndEndBefore(Long bookerId,
-                                                           Long itemId,
-                                                           BookingStatus status,
-                                                           LocalDateTime end);
 
     // Все бронирования конкретной вещи
     List<Booking> findAllByItemIdOrderByStartAsc(Long itemId);
