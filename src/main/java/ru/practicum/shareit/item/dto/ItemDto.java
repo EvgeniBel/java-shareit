@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.experimental.FieldDefaults;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 
+import java.util.List;
+
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
 @Builder

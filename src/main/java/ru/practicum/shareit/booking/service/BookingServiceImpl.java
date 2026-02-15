@@ -15,9 +15,14 @@ import ru.practicum.shareit.booking.model.BookingFilterState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.BookingNotFoundException;
 import ru.practicum.shareit.exception.BookingValidationException;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
+import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
@@ -35,16 +40,22 @@ import static ru.practicum.shareit.booking.model.BookingStatus.WAITING;
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
-    private final ItemService itemService;
     private final UserService userService;
+    private final ItemRepository itemRepository;
+    private final ItemMapper itemMapper;
+    private final UserMapper userMapper;
 
     @Override
     @Transactional
     public BookingResponseDto createBooking(Long userId, BookingRequestDto bookingRequestDto) {
         log.info("Создание бронирования пользователем с ID={}", userId);
 
+        if (bookingRequestDto == null) {
+            throw new BookingValidationException("Данные бронирования не могут быть пустыми");
+        }
+
         User booker = userService.getUserModelById(userId);
-        Item item = itemService.getItemById(bookingRequestDto.getItemId());
+        Item item = getItemModelById(bookingRequestDto.getItemId());
 
         validateBookingCreation(userId, item, bookingRequestDto);
 
@@ -53,7 +64,10 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Бронирование с ID={} создано успешно", savedBooking.getId());
 
-        return bookingMapper.mapToResponseDto(savedBooking, item.getName(), booker.getName());
+        ItemDto itemDto = itemMapper.mapToDto(item);
+        UserDto userDto = userMapper.mapToDto(booker);
+
+        return bookingMapper.mapToResponseDto(savedBooking, itemDto, userDto);
     }
 
     @Override
@@ -65,7 +79,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
-        Item item = itemService.getItemById(booking.getItemId());
+        Item item = getItemModelById(booking.getItemId());
 
         if (!item.getUserId().equals(userId)) {
             throw new UnauthorizedAccessException(
@@ -82,7 +96,10 @@ public class BookingServiceImpl implements BookingService {
         log.info("Статус бронирования ID={} изменен на {}", bookingId, updatedBooking.getStatus());
 
         User booker = userService.getUserModelById(updatedBooking.getBookerId());
-        return bookingMapper.mapToResponseDto(updatedBooking, item.getName(), booker.getName());
+
+        ItemDto itemDto = itemMapper.mapToDto(item);
+        UserDto userDto = userMapper.mapToDto(booker);
+        return bookingMapper.mapToResponseDto(updatedBooking, itemDto, userDto);
     }
 
     @Override
@@ -93,7 +110,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
-        Item item = itemService.getItemById(booking.getItemId());
+        Item item = getItemModelById(booking.getItemId());
 
         if (!booking.getBookerId().equals(userId) && !item.getUserId().equals(userId)) {
             throw new UnauthorizedAccessException(
@@ -101,17 +118,20 @@ public class BookingServiceImpl implements BookingService {
         }
 
         User booker = userService.getUserModelById(booking.getBookerId());
-        return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
+        ItemDto itemDto = itemMapper.mapToDto(item);
+        UserDto userDto = userMapper.mapToDto(booker);
+        return bookingMapper.mapToResponseDto(booking, itemDto, userDto);
     }
 
     @Override
     public List<BookingResponseDto> getUserBookings(Long userId, String state, Integer from, Integer size) {
-
         log.info("Получение бронирований пользователя ID={} с состоянием {}", userId, state);
 
         userService.getUserModelById(userId);
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        validatePaginationParams(from, size);
+
+        Pageable pageable = createPageable(from, size);
         BookingFilterState bookingState = BookingFilterState.fromString(state);
 
         List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId, pageable);
@@ -120,7 +140,84 @@ public class BookingServiceImpl implements BookingService {
         return mapBookingsToResponseDto(filteredBookings);
     }
 
+    @Override
+    public List<BookingResponseDto> getOwnerBookings(Long userId, String state, Integer from, Integer size) {
+        log.info("Получение бронирований владельца ID={} с состоянием {}", userId, state);
+
+        userService.getUserModelById(userId);
+
+        validatePaginationParams(from, size);
+
+        Pageable pageable = createPageable(from, size);
+        BookingFilterState bookingState = BookingFilterState.fromString(state);
+
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerId(userId, pageable);
+        List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
+
+        return mapBookingsToResponseDto(filteredBookings);
+    }
+
+    private Item getItemModelById(Long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Вещь с ID=%d не найдена", itemId)));
+    }
+
+    private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
+        if (item.getUserId().equals(userId)) {
+            throw new BookingValidationException("Нельзя забронировать свою вещь");
+        }
+
+        if (item.getAvailable() == null || !item.getAvailable()) {
+            throw new BookingValidationException("Вещь недоступна для бронирования");
+        }
+
+        if (bookingRequestDto.getStart() == null || bookingRequestDto.getEnd() == null) {
+            throw new BookingValidationException("Даты начала и окончания должны быть указаны");
+        }
+
+        LocalDateTime start = bookingRequestDto.getStart();
+        LocalDateTime end = bookingRequestDto.getEnd();
+
+        if (start.isAfter(end)) {
+            throw new BookingValidationException("Дата начала не может быть позже даты окончания");
+        }
+
+        if (start.isEqual(end)) {
+            throw new BookingValidationException("Дата начала и окончания не могут совпадать");
+        }
+
+        if (start.isBefore(LocalDateTime.now())) {
+            throw new BookingValidationException("Дата начала не может быть в прошлом");
+        }
+
+        List<Booking> overlappingBookings = bookingRepository.findOverlappingApprovedBookings(
+                item.getId(), start, end);
+
+        if (!overlappingBookings.isEmpty()) {
+            throw new BookingValidationException("Вещь уже забронирована на указанные даты");
+        }
+    }
+
+    private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
+        return bookings.stream()
+                .map(booking -> {
+                    Item item = getItemModelById(booking.getItemId());  // ИСПРАВЛЕНО
+                    User user = userService.getUserModelById(booking.getBookerId());
+
+                    ItemDto itemDto = itemMapper.mapToDto(item);
+                    UserDto userDto = userMapper.mapToDto(user);
+
+                    return bookingMapper.mapToResponseDto(booking, itemDto, userDto);
+                })
+                .collect(Collectors.toList());
+    }
+
     private List<Booking> filterBookingsByState(List<Booking> bookings, BookingFilterState state) {
+        if (bookings == null || bookings.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         switch (state) {
@@ -144,67 +241,20 @@ public class BookingServiceImpl implements BookingService {
                 return bookings.stream()
                         .filter(b -> b.getStatus() == BookingStatus.REJECTED)
                         .collect(Collectors.toList());
-            case CANCELED:
-                return bookings.stream()
-                        .filter(b -> b.getStatus() == BookingStatus.CANCELED)
-                        .collect(Collectors.toList());
             case ALL:
             default:
                 return bookings;
         }
     }
 
-    @Override
-    public List<BookingResponseDto> getOwnerBookings(Long userId, String state, Integer from, Integer size) {
-
-        log.info("Получение бронирований владельца ID={} с состоянием {}", userId, state);
-
-        userService.getUserModelById(userId);
-
-        Pageable pageable = PageRequest.of(from / size, size);
-        BookingFilterState bookingState = BookingFilterState.fromString(state);
-
-        List<Booking> bookings = bookingRepository.findAllByItemOwnerId(userId, pageable);
-        List<Booking> filteredBookings = filterBookingsByState(bookings, bookingState);
-
-        return mapBookingsToResponseDto(filteredBookings);
-    }
-
-    private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
-        if (item.getUserId().equals(userId)) {
-            throw new BookingValidationException("Нельзя забронировать свою вещь");
-        }
-
-        if (item.getAvailable() == null || !item.getAvailable()) {
-            throw new BookingValidationException("Вещь недоступна для бронирования");
-        }
-
-        LocalDateTime start = bookingRequestDto.getStart();
-        LocalDateTime end = bookingRequestDto.getEnd();
-
-        if (start.isAfter(end)) {
-            throw new BookingValidationException("Дата начала не может быть позже даты окончания");
-        }
-
-        if (start.isEqual(end)) {
-            throw new BookingValidationException("Дата начала и окончания не могут совпадать");
-        }
-
-        List<Booking> overlappingBookings = bookingRepository.findOverlappingApprovedBookings(
-                item.getId(), start, end);
-
-        if (!overlappingBookings.isEmpty()) {
-            throw new BookingValidationException("Вещь уже забронирована на указанные даты");
+    private void validatePaginationParams(Integer from, Integer size) {
+        if (from == null || size == null || from < 0 || size <= 0) {
+            throw new IllegalArgumentException("Некорректные параметры пагинации");
         }
     }
 
-    private List<BookingResponseDto> mapBookingsToResponseDto(List<Booking> bookings) {
-        return bookings.stream()
-                .map(booking -> {
-                    Item item = itemService.getItemById(booking.getItemId());
-                    User booker = userService.getUserModelById(booking.getBookerId());
-                    return bookingMapper.mapToResponseDto(booking, item.getName(), booker.getName());
-                })
-                .collect(Collectors.toList());
+    private Pageable createPageable(Integer from, Integer size) {
+        int page = from / size;
+        return PageRequest.of(page, size);
     }
 }
