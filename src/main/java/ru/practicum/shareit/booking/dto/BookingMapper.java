@@ -50,4 +50,12 @@ public class BookingMapper {
                 .status(booking.getStatus())
                 .build();
     }
+
+    public BookingShortDto mapToShortDto(Booking booking) {
+        if (booking == null) return null;
+        return BookingShortDto.builder()
+                .id(booking.getId())
+                .bookerId(booking.getBookerId())
+                .build();
+    }
 }
