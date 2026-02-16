@@ -127,7 +127,7 @@ public class ItemServiceImpl implements ItemService {
 
         if (!item.getUserId().equals(userId)) {
             throw new UnauthorizedAccessException(
-                    String.format("Пользователь с ID=%d не является владельцем вещи", userId));
+                    String.format("Пользователь с ID=%d не является владельцем вещи c ID=%d", userId, itemId));
         }
 
         // Обновляем только переданные поля
@@ -221,7 +221,7 @@ public class ItemServiceImpl implements ItemService {
 
         // Проверяем существование пользователя
         userRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", ownerId)));
 
         List<Item> items = itemRepository.findByUserId(ownerId);
         List<ItemDto> itemDtos = new ArrayList<>();
@@ -262,18 +262,18 @@ public class ItemServiceImpl implements ItemService {
 
         // Проверяем существование пользователя
         User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", userId)));
 
         // Проверяем существование вещи
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
 
         // ПРАВИЛЬНО: используем метод с проверкой статуса APPROVED
         boolean hasBooked = bookingRepository.hasUserBookedAndApproved(
                 userId, itemId, LocalDateTime.now());
 
         if (!hasBooked) {
-            throw new ValidationException("Пользователь не брал эту вещь в аренду");
+            throw new ValidationException(String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду", userId, itemId));
         }
 
         // Создаем комментарий
