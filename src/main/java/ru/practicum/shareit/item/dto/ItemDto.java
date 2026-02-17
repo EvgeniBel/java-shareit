@@ -6,6 +6,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
+import ru.practicum.shareit.booking.dto.BookingShortDto;
+
+import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
@@ -20,4 +23,8 @@ public class ItemDto {
     @NotNull(message = "Поле available обязательно")
     Boolean available;
     Long requestId;
+
+    BookingShortDto lastBooking;
+    BookingShortDto nextBooking;
+    List<CommentDto> comments;
 }

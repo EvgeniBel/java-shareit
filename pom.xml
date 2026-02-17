@@ -21,7 +21,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<enforcer.skip>true</enforcer.skip> <!-- Отключаем enforcer -->
+		<enforcer.skip>true</enforcer.skip>
 	</properties>
 
 	<dependencies>
@@ -144,7 +144,7 @@
 					<plugin>
 						<groupId>org.jacoco</groupId>
 						<artifactId>jacoco-maven-plugin</artifactId>
-						<version>0.8.12</version>
+						<version>0.8.13</version>
 						<executions>
 							<execution>
 								<goals>

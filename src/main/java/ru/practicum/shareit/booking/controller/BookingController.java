@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking;
+package ru.practicum.shareit.booking.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +57,13 @@ public class BookingController {
             @RequestParam(defaultValue = "0") Integer from,
             @RequestParam(defaultValue = "10") Integer size) {
         return bookingService.getOwnerBookings(userId, state, from, size);
+    }
+
+    @PatchMapping("/{bookingId}/cancel")
+    public BookingResponseDto cancelBooking(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @PathVariable Long bookingId) {
+        return bookingService.cancelBooking(userId, bookingId);
     }
 }
 
