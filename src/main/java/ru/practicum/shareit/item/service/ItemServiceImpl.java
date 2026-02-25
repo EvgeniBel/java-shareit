@@ -26,9 +26,7 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -106,6 +104,18 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return itemDto;
+    }
+
+    @Override
+    public Map<Long, List<Item>> getItemsByRequestIds(List<Long> requestIds) {
+        if (requestIds == null || requestIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Item> items = itemRepository.findByRequestIdIn(requestIds);
+
+        return items.stream()
+                .collect(Collectors.groupingBy(Item::getRequestId));
     }
 
     @Override

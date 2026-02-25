@@ -19,7 +19,9 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,11 +44,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Пользователь с ID=%d не найден", userId)));
 
-        ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto);
-        itemRequest.setRequestor(user);
-        itemRequest.setCreated(LocalDateTime.now());
-        itemRequest.setId(null);
-
+        ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto, user);
         ItemRequest savedRequest = itemRequestRepository.save(itemRequest);
         log.info("Запрос создан с ID={}", savedRequest.getId());
 
@@ -57,9 +55,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public List<ItemRequestWithItemsDto> getUserItemRequests(Long userId) {
         log.info("Получение запросов пользователя ID={}", userId);
 
-        return itemRequestRepository.findByRequestorIdOrderByCreatedDesc(userId).stream()
-                .map(this::buildItemRequestWithItemsDto)
-                .collect(Collectors.toList());
+        List<ItemRequest> requests = itemRequestRepository.findByRequestorIdOrderByCreatedDesc(userId);
+
+        return enrichRequestsWithItems(requests);
     }
 
     @Override
@@ -72,9 +70,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
         List<ItemRequest> requests = itemRequestRepository.findAllExceptUser(userId, pageable);
 
-        return requests.stream()
-                .map(this::buildItemRequestWithItemsDto)
-                .collect(Collectors.toList());
+        return enrichRequestsWithItems(requests);
     }
 
     @Override
@@ -90,17 +86,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     private ItemRequestWithItemsDto buildItemRequestWithItemsDto(ItemRequest itemRequest) {
         List<Item> items = itemService.getItemsByRequestId(itemRequest.getId());
-
-
-        return ItemRequestWithItemsDto.builder()
-                .id(itemRequest.getId())
-                .description(itemRequest.getDescription())
-                .requestorId(itemRequest.getRequestor().getId())
-                .created(itemRequest.getCreated())
-                .items(items.stream()
-                        .map(itemMapper::mapToDto)
-                        .collect(Collectors.toList()))
-                .build();
+        return buildItemRequestWithItemsDto(itemRequest, items);
     }
 
     private void validatePaginationParams(Integer from, Integer size) {
@@ -118,5 +104,37 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private Pageable createPageable(Integer from, Integer size) {
         int page = from / size;
         return PageRequest.of(page, size);
+    }
+
+    private List<ItemRequestWithItemsDto> enrichRequestsWithItems(List<ItemRequest> requests) {
+        if (requests.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Собираем ID всех запросов
+        List<Long> requestIds = requests.stream()
+                .map(ItemRequest::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, List<Item>> itemsByRequestId = itemService.getItemsByRequestIds(requestIds);
+
+        return requests.stream()
+                .map(request -> {
+                    List<Item> items = itemsByRequestId.getOrDefault(request.getId(), Collections.emptyList());
+                    return buildItemRequestWithItemsDto(request, items);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private ItemRequestWithItemsDto buildItemRequestWithItemsDto(ItemRequest request, List<Item> items) {
+        return ItemRequestWithItemsDto.builder()
+                .id(request.getId())
+                .description(request.getDescription())
+                .requestorId(request.getRequestor().getId())
+                .created(request.getCreated())
+                .items(items.stream()
+                        .map(itemMapper::mapToDto)
+                        .collect(Collectors.toList()))
+                .build();
     }
 }
