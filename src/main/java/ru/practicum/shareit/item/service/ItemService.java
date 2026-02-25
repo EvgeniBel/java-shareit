@@ -30,4 +30,6 @@ public interface ItemService {
     List<ItemDto> getItemsByOwner(Long ownerId);
 
     Map<Long, List<Item>> getItemsByRequestIds(List<Long> requestIds);
+
+    List<ItemDto> getItemsByRequests();
 }

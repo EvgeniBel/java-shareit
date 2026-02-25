@@ -298,4 +298,15 @@ public class ItemServiceImpl implements ItemService {
 
         return CommentMapper.toCommentDto(savedComment);
     }
+
+    @Override
+    public List<ItemDto> getItemsByRequests() {
+        log.info("Получение всех вещей, созданных по запросам");
+
+        List<Item> items = itemRepository.findItemsWithRequests();
+
+        return items.stream()
+                .map(itemMapper::mapToDto)
+                .collect(Collectors.toList());
+    }
 }

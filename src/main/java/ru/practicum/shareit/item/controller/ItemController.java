@@ -67,4 +67,10 @@ public class ItemController {
                                  @Valid @RequestBody CommentDto commentDto) {
         return itemService.addComment(userId, itemId, commentDto);
     }
+
+    @GetMapping("/requests")
+    public List<ItemDto> getItemsByRequests(
+            @RequestHeader(USER_ID_HEADER) Long userId) {
+        return itemService.getItemsByRequests();
+    }
 }
