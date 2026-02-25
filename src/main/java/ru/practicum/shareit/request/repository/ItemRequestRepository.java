@@ -15,16 +15,10 @@ public interface ItemRequestRepository extends JpaRepository<ItemRequest, Long> 
 
     // Запросы других пользователей (с пагинацией)
     @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.requestorId != :userId " +
+            "WHERE ir.requestor.id != :userId " +  // обратите внимание на ir.requestor.id
             "ORDER BY ir.created DESC")
     List<ItemRequest> findAllExceptUser(@Param("userId") Long userId, Pageable pageable);
 
-    // Запросы других пользователей (без пагинации)
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.requestorId != :userId " +
-            "ORDER BY ir.created DESC")
-    List<ItemRequest> findAllExceptUser(@Param("userId") Long userId);
-
-    // Подсчет количества запросов пользователя
+        // Подсчет количества запросов пользователя
     long countByRequestorId(Long requestorId);
 }

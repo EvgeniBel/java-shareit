@@ -15,6 +15,8 @@ import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 import ru.practicum.shareit.request.dto.mapper.ItemRequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 public class ItemRequestServiceImpl implements ItemRequestService {
     private final ItemRequestRepository itemRequestRepository;
     private final ItemService itemService;
+    private final UserRepository userRepository;
     private final ItemRequestMapper itemRequestMapper;
     private final ItemMapper itemMapper;
 
@@ -35,8 +38,12 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public ItemRequestDto createItemRequest(Long userId, ItemRequestDto itemRequestDto) {
         log.info("Создание запроса вещи пользователем ID={}", userId);
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        String.format("Пользователь с ID=%d не найден", userId)));
+
         ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto);
-        itemRequest.setRequestorId(userId);
+        itemRequest.setRequestor(user);
         itemRequest.setCreated(LocalDateTime.now());
         itemRequest.setId(null);
 
@@ -84,10 +91,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private ItemRequestWithItemsDto buildItemRequestWithItemsDto(ItemRequest itemRequest) {
         List<Item> items = itemService.getItemsByRequestId(itemRequest.getId());
 
+
         return ItemRequestWithItemsDto.builder()
                 .id(itemRequest.getId())
                 .description(itemRequest.getDescription())
-                .requestorId(itemRequest.getRequestorId())
+                .requestorId(itemRequest.getRequestor().getId())
                 .created(itemRequest.getCreated())
                 .items(items.stream()
                         .map(itemMapper::mapToDto)
