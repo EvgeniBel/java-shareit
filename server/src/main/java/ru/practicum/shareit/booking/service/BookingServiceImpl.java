@@ -13,10 +13,9 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
-import ru.practicum.shareit.exception.BookingNotFoundException;
-import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -49,7 +48,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Создание бронирования пользователем с ID={}", userId);
 
         if (bookingRequestDto == null) {
-            throw new BookingValidationException("Данные бронирования не могут быть пустыми");
+            throw new ValidationException("Данные бронирования не могут быть пустыми");
         }
 
         User booker = userService.getUserModelById(userId);
@@ -74,7 +73,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Обновление статуса бронирования ID={} пользователем ID={}", bookingId, userId);
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
         Item item = getItemModelById(booking.getItemId());
@@ -85,7 +84,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         if (booking.getStatus() != BookingStatus.WAITING) {
-            throw new BookingValidationException("Статус бронирования уже изменен");
+            throw new ValidationException("Статус бронирования уже изменен");
         }
 
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
@@ -105,7 +104,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Получение бронирования ID={} пользователем ID={}", bookingId, userId);
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
         Item item = getItemModelById(booking.getItemId());
@@ -170,7 +169,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Отмена бронирования ID={} пользователем ID={}", bookingId, userId);
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         String.format("Бронирование с ID=%d не найдено", bookingId)));
 
         // Только автор бронирования может отменить
@@ -181,7 +180,7 @@ public class BookingServiceImpl implements BookingService {
 
         // Можно отменить только ожидающие бронирования
         if (booking.getStatus() != BookingStatus.WAITING) {
-            throw new BookingValidationException("Можно отменить только бронирования в статусе WAITING");
+            throw new ValidationException("Можно отменить только бронирования в статусе WAITING");
         }
 
         booking.setStatus(BookingStatus.CANCELED);
@@ -214,37 +213,37 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateBookingCreation(Long userId, Item item, BookingRequestDto bookingRequestDto) {
         if (item.getUserId().equals(userId)) {
-            throw new BookingValidationException("Нельзя забронировать свою вещь");
+            throw new ValidationException("Нельзя забронировать свою вещь");
         }
 
         if (item.getAvailable() == null || !item.getAvailable()) {
-            throw new BookingValidationException("Вещь недоступна для бронирования");
+            throw new ValidationException("Вещь недоступна для бронирования");
         }
 
         if (bookingRequestDto.getStart() == null || bookingRequestDto.getEnd() == null) {
-            throw new BookingValidationException("Даты начала и окончания должны быть указаны");
+            throw new ValidationException("Даты начала и окончания должны быть указаны");
         }
 
         LocalDateTime start = bookingRequestDto.getStart();
         LocalDateTime end = bookingRequestDto.getEnd();
 
         if (start.isAfter(end)) {
-            throw new BookingValidationException("Дата начала не может быть позже даты окончания");
+            throw new ValidationException("Дата начала не может быть позже даты окончания");
         }
 
         if (start.isEqual(end)) {
-            throw new BookingValidationException("Дата начала и окончания не могут совпадать");
+            throw new ValidationException("Дата начала и окончания не могут совпадать");
         }
 
         if (start.isBefore(LocalDateTime.now())) {
-            throw new BookingValidationException("Дата начала не может быть в прошлом");
+            throw new ValidationException("Дата начала не может быть в прошлом");
         }
 
         List<Booking> overlappingBookings = bookingRepository.findOverlappingApprovedBookings(
                 item.getId(), start, end);
 
         if (!overlappingBookings.isEmpty()) {
-            throw new BookingValidationException("Вещь уже забронирована на указанные даты");
+            throw new ValidationException("Вещь уже забронирована на указанные даты");
         }
     }
 
