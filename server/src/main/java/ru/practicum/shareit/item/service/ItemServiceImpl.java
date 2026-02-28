@@ -226,46 +226,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getItemsByOwner(Long ownerId) {
-        log.info("Получение всех вещей владельца с ID={} с датами бронирований", ownerId);
-
-        // Проверяем существование пользователя
-        userRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", ownerId)));
-
-        List<Item> items = itemRepository.findByUserId(ownerId);
-        List<ItemDto> itemDtos = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-
-        for (Item item : items) {
-            ItemDto itemDto = itemMapper.mapToDto(item);
-
-            // Последнее бронирование (прошедшее)
-            Optional<Booking> lastBooking = bookingRepository
-                    .findFirstByItemIdAndEndBeforeOrderByEndDesc(item.getId(), now);
-            lastBooking.ifPresent(booking ->
-                    itemDto.setLastBooking(bookingMapper.mapToShortDto(booking)));
-
-            // Следующее бронирование (будущее)
-            Optional<Booking> nextBooking = bookingRepository
-                    .findFirstByItemIdAndStartAfterOrderByStartAsc(item.getId(), now);
-            nextBooking.ifPresent(booking ->
-                    itemDto.setNextBooking(bookingMapper.mapToShortDto(booking)));
-
-            // Добавляем комментарии
-            List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(item.getId());
-            List<CommentDto> commentDtos = comments.stream()
-                    .map(CommentMapper::toCommentDto)
-                    .collect(Collectors.toList());
-            itemDto.setComments(commentDtos);
-
-            itemDtos.add(itemDto);
-        }
-
-        return itemDtos;
-    }
-
-    @Override
     @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
@@ -297,16 +257,5 @@ public class ItemServiceImpl implements ItemService {
         log.info("Комментарий добавлен с ID={}", savedComment.getId());
 
         return CommentMapper.toCommentDto(savedComment);
-    }
-
-    @Override
-    public List<ItemDto> getItemsByRequests() {
-        log.info("Получение всех вещей, созданных по запросам");
-
-        List<Item> items = itemRepository.findItemsWithRequests();
-
-        return items.stream()
-                .map(itemMapper::mapToDto)
-                .collect(Collectors.toList());
     }
 }

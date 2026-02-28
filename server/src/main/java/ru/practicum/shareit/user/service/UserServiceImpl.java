@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.DuplicateEmailException;
+import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
         log.info("Создание пользователя с email: {}", userDto.getEmail());
 
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new DuplicateEmailException(
+            throw new ConflictException(
                     String.format("Пользователь с email %s уже существует", userDto.getEmail()));
         }
 
@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
 
         if (userDto.getEmail() != null && !userDto.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmailAndIdNot(userDto.getEmail(), userId)) {
-                throw new DuplicateEmailException(
+                throw new ConflictException(
                         String.format("Email %s уже используется", userDto.getEmail()));
             }
             user.setEmail(userDto.getEmail());

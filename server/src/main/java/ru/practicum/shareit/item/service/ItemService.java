@@ -27,9 +27,5 @@ public interface ItemService {
 
     CommentDto addComment(Long userId, Long itemId, CommentDto commentDto);
 
-    List<ItemDto> getItemsByOwner(Long ownerId);
-
     Map<Long, List<Item>> getItemsByRequestIds(List<Long> requestIds);
-
-    List<ItemDto> getItemsByRequests();
 }
