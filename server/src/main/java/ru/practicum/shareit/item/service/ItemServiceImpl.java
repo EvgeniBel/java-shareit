@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -236,12 +237,12 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
 
-        boolean hasCompletedAndApprovedBooking = bookingRepository.hasUserBookedAndApproved(
-                userId, itemId, LocalDateTime.now());
+        boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
+                userId, itemId, BookingStatus.APPROVED);
 
-        if (!hasCompletedAndApprovedBooking) {
+        if (!hasApprovedBooking) {
             throw new ValidationException(
-                    String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду или аренда еще не завершена",
+                    String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду",
                             userId, itemId));
         }
 
