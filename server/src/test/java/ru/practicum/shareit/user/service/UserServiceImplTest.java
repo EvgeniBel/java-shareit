@@ -26,8 +26,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
-    private final Long USER_ID = 1L;
-    private final Long NON_EXISTENT_ID = 99L;
+    private final Long userId = 1L;
+    private final Long nonExistentId = 99L;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -42,13 +42,13 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         user = User.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name("Jakson")
                 .email("email@example.com")
                 .build();
 
         userDto = UserDto.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name("Jakson")
                 .email("email@example.com")
                 .build();
@@ -82,56 +82,56 @@ class UserServiceImplTest {
 
     @Test
     void testGetUserByIdWhenUserExists() {
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userMapper.mapToDto(user)).thenReturn(userDto);
 
-        UserDto result = userService.getUserById(USER_ID);
+        UserDto result = userService.getUserById(userId);
 
         assertNotNull(result);
         assertEquals(userDto, result);
-        assertEquals(USER_ID, result.getId());
+        assertEquals(userId, result.getId());
         assertEquals(userDto.getName(), result.getName());
         assertEquals(userDto.getEmail(), result.getEmail());
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findById(userId);
         verify(userMapper, times(1)).mapToDto(user);
     }
 
     @Test
     void testGetUserByIdWhenUserNotFound() {
-        when(userRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userService.getUserById(NON_EXISTENT_ID));
+                () -> userService.getUserById(nonExistentId));
 
-        assertEquals(String.format("User с Id=%d не найден", NON_EXISTENT_ID), exception.getMessage());
-        verify(userRepository, times(1)).findById(NON_EXISTENT_ID);
+        assertEquals(String.format("User с Id=%d не найден", nonExistentId), exception.getMessage());
+        verify(userRepository, times(1)).findById(nonExistentId);
         verify(userMapper, never()).mapToDto(any());
     }
 
     @Test
     void testGetUserModelByIdWhenUserExists() {
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        User result = userService.getUserModelById(USER_ID);
+        User result = userService.getUserModelById(userId);
 
         assertNotNull(result);
         assertEquals(user, result);
-        assertEquals(USER_ID, result.getId());
+        assertEquals(userId, result.getId());
         assertEquals(user.getName(), result.getName());
         assertEquals(user.getEmail(), result.getEmail());
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findById(userId);
         verify(userMapper, never()).mapToDto(any());
     }
 
     @Test
     void testGetUserModelByIdWhenUserNotFound() {
-        when(userRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userService.getUserModelById(NON_EXISTENT_ID));
+                () -> userService.getUserModelById(nonExistentId));
 
-        assertEquals(String.format("User с Id=%d не найден", NON_EXISTENT_ID), exception.getMessage());
-        verify(userRepository, times(1)).findById(NON_EXISTENT_ID);
+        assertEquals(String.format("User с Id=%d не найден", nonExistentId), exception.getMessage());
+        verify(userRepository, times(1)).findById(nonExistentId);
     }
 
     @Test
@@ -142,7 +142,7 @@ class UserServiceImplTest {
                 .build();
 
         User savedUser = User.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name(userDto.getName())
                 .email(userDto.getEmail())
                 .build();
@@ -156,7 +156,7 @@ class UserServiceImplTest {
 
         assertNotNull(result);
         assertEquals(userDto, result);
-        assertEquals(USER_ID, result.getId());
+        assertEquals(userId, result.getId());
 
         verify(userRepository, times(1)).existsByEmail(userDto.getEmail());
         verify(userMapper, times(1)).mapToUser(userDto);
@@ -213,24 +213,24 @@ class UserServiceImplTest {
                 .build();
 
         User updatedUser = User.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name("UpdatedName")
                 .email("updated@example.com")
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), USER_ID)).thenReturn(false);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), userId)).thenReturn(false);
         when(userRepository.save(any(User.class))).thenReturn(updatedUser);
         when(userMapper.mapToDto(updatedUser)).thenReturn(updateDto);
 
-        UserDto result = userService.updateUser(USER_ID, updateDto);
+        UserDto result = userService.updateUser(userId, updateDto);
 
         assertNotNull(result);
         assertEquals("UpdatedName", result.getName());
         assertEquals("updated@example.com", result.getEmail());
 
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), USER_ID);
+        verify(userRepository, times(1)).findById(userId);
+        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), userId);
         verify(userRepository, times(1)).save(userCaptor.capture());
 
         User capturedUser = userCaptor.getValue();
@@ -245,23 +245,23 @@ class UserServiceImplTest {
                 .build();
 
         User expectedUser = User.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name("UpdatedName")
                 .email(user.getEmail())
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(expectedUser);
         when(userMapper.mapToDto(expectedUser)).thenReturn(
                 UserDto.builder().name("UpdatedName").email(user.getEmail()).build());
 
-        UserDto result = userService.updateUser(USER_ID, updateDto);
+        UserDto result = userService.updateUser(userId, updateDto);
 
         assertNotNull(result);
         assertEquals("UpdatedName", result.getName());
         assertEquals(user.getEmail(), result.getEmail());
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findById(userId);
         verify(userRepository, never()).existsByEmailAndIdNot(anyString(), anyLong());
         verify(userRepository, times(1)).save(userCaptor.capture());
 
@@ -277,25 +277,25 @@ class UserServiceImplTest {
                 .build();
 
         User expectedUser = User.builder()
-                .id(USER_ID)
+                .id(userId)
                 .name(user.getName())
                 .email("newemail@example.com")
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), USER_ID)).thenReturn(false);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), userId)).thenReturn(false);
         when(userRepository.save(any(User.class))).thenReturn(expectedUser);
         when(userMapper.mapToDto(expectedUser)).thenReturn(
                 UserDto.builder().name(user.getName()).email("newemail@example.com").build());
 
-        UserDto result = userService.updateUser(USER_ID, updateDto);
+        UserDto result = userService.updateUser(userId, updateDto);
 
         assertNotNull(result);
         assertEquals(user.getName(), result.getName());
         assertEquals("newemail@example.com", result.getEmail());
 
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), USER_ID);
+        verify(userRepository, times(1)).findById(userId);
+        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), userId);
         verify(userRepository, times(1)).save(userCaptor.capture());
 
         User capturedUser = userCaptor.getValue();
@@ -310,28 +310,28 @@ class UserServiceImplTest {
                 .name("UpdatedName")
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(userMapper.mapToDto(any(User.class))).thenReturn(updateDto);
 
-        userService.updateUser(USER_ID, updateDto);
+        userService.updateUser(userId, updateDto);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findById(userId);
         verify(userRepository, never()).existsByEmailAndIdNot(anyString(), anyLong());
         verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
     void testUpdateUserWhenUserNotFound() {
-        when(userRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userService.updateUser(NON_EXISTENT_ID, userDto));
+                () -> userService.updateUser(nonExistentId, userDto));
 
-        assertEquals(String.format("Пользователь с ID=%d не найден", NON_EXISTENT_ID),
+        assertEquals(String.format("Пользователь с ID=%d не найден", nonExistentId),
                 exception.getMessage());
 
-        verify(userRepository, times(1)).findById(NON_EXISTENT_ID);
+        verify(userRepository, times(1)).findById(nonExistentId);
         verify(userRepository, never()).existsByEmailAndIdNot(anyString(), anyLong());
         verify(userRepository, never()).save(any());
     }
@@ -342,53 +342,53 @@ class UserServiceImplTest {
                 .email("existing@email.com")
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), USER_ID)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailAndIdNot(updateDto.getEmail(), userId)).thenReturn(true);
 
         ConflictException exception = assertThrows(ConflictException.class,
-                () -> userService.updateUser(USER_ID, updateDto));
+                () -> userService.updateUser(userId, updateDto));
 
         assertEquals(String.format("Email %s уже используется", updateDto.getEmail()),
                 exception.getMessage());
 
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), USER_ID);
+        verify(userRepository, times(1)).findById(userId);
+        verify(userRepository, times(1)).existsByEmailAndIdNot(updateDto.getEmail(), userId);
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void testDeleteUserWhenUserExists() {
-        when(userRepository.existsById(USER_ID)).thenReturn(true);
-        doNothing().when(userRepository).deleteById(USER_ID);
+        when(userRepository.existsById(userId)).thenReturn(true);
+        doNothing().when(userRepository).deleteById(userId);
 
-        userService.deleteUser(USER_ID);
+        userService.deleteUser(userId);
 
-        verify(userRepository, times(1)).existsById(USER_ID);
-        verify(userRepository, times(1)).deleteById(USER_ID);
+        verify(userRepository, times(1)).existsById(userId);
+        verify(userRepository, times(1)).deleteById(userId);
     }
 
     @Test
     void testDeleteUserWhenUserNotFound() {
-        when(userRepository.existsById(NON_EXISTENT_ID)).thenReturn(false);
+        when(userRepository.existsById(nonExistentId)).thenReturn(false);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userService.deleteUser(NON_EXISTENT_ID));
+                () -> userService.deleteUser(nonExistentId));
 
-        assertEquals(String.format("Пользователь с ID=%d не найден", NON_EXISTENT_ID),
+        assertEquals(String.format("Пользователь с ID=%d не найден", nonExistentId),
                 exception.getMessage());
 
-        verify(userRepository, times(1)).existsById(NON_EXISTENT_ID);
+        verify(userRepository, times(1)).existsById(nonExistentId);
         verify(userRepository, never()).deleteById(any());
     }
 
     @Test
     void testDeleteUser() {
-        when(userRepository.existsById(USER_ID)).thenReturn(true);
+        when(userRepository.existsById(userId)).thenReturn(true);
 
-        userService.deleteUser(USER_ID);
+        userService.deleteUser(userId);
 
-        verify(userRepository, times(1)).existsById(USER_ID);
-        verify(userRepository, times(1)).deleteById(USER_ID);
+        verify(userRepository, times(1)).existsById(userId);
+        verify(userRepository, times(1)).deleteById(userId);
     }
 
     @Test
@@ -397,14 +397,14 @@ class UserServiceImplTest {
                 .name("UpdatedName")
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userMapper.mapToDto(any(User.class))).thenAnswer(invocation -> {
             User u = invocation.getArgument(0);
             return UserDto.builder().name(u.getName()).email(u.getEmail()).build();
         });
 
-        UserDto result = userService.updateUser(USER_ID, updateDto);
+        UserDto result = userService.updateUser(userId, updateDto);
 
         assertNotNull(result);
         assertEquals("UpdatedName", result.getName());

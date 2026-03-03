@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserUpdateDto;
 
 
 @Slf4j
@@ -35,7 +36,7 @@ public class UserController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable Long userId,
-                                              @RequestBody UserDto userDto) {
+                                             @Valid @RequestBody UserUpdateDto userDto) {
         log.info("Gateway: PATCH /users/{} with user: {}", userId, userDto);
         return userClient.updateUser(userId, userDto);
     }

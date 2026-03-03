@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -636,7 +635,7 @@ class ItemServiceImplTest {
 
         assertNotNull(result);
         assertEquals(commentDto.getText(), result.getText());
-            }
+    }
 
     @Test
     void testAddCommentUserNotFound_() {
