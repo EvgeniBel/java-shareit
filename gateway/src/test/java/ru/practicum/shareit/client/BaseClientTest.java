@@ -14,7 +14,7 @@ import static org.mockito.Mockito.*;
 
 class BaseClientTest {
 
-    private final String USER_ID_HEADER = "X-Sharer-User-Id";
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private RestTemplate restTemplate;
     private TestClient testClient;
 
