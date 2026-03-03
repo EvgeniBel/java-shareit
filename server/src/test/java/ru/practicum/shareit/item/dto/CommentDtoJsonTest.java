@@ -1,4 +1,5 @@
 package ru.practicum.shareit.item.dto;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
@@ -13,10 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JsonTest
 class CommentDtoJsonTest {
 
+    private final LocalDateTime now = LocalDateTime.now();
     @Autowired
     private JacksonTester<CommentDto> json;
-
-    private final LocalDateTime now = LocalDateTime.now();
 
     @Test
     void testSerializeCommentDto() throws IOException {

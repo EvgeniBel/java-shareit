@@ -5,33 +5,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import ru.practicum.shareit.exception.ValidationException;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class BaseClientTest {
 
+    private final String USER_ID_HEADER = "X-Sharer-User-Id";
     private RestTemplate restTemplate;
     private TestClient testClient;
-    private final String USER_ID_HEADER = "X-Sharer-User-Id";
-
-    static class TestClient extends BaseClient {
-        public TestClient(RestTemplate rest) {
-            super(rest);
-        }
-
-        public ResponseEntity<Object> testGet(String path, Long userId, Map<String, Object> params) {
-            return get(path, userId, params);
-        }
-
-        public ResponseEntity<Object> testPost(String path, Long userId, Object body) {
-            return post(path, userId, body);
-        }
-    }
 
     @BeforeEach
     void setUp() {
@@ -114,5 +99,19 @@ class BaseClientTest {
                     HttpHeaders headers = entity.getHeaders();
                     return !headers.containsKey(USER_ID_HEADER);
                 }), eq(Object.class));
+    }
+
+    static class TestClient extends BaseClient {
+        public TestClient(RestTemplate rest) {
+            super(rest);
+        }
+
+        public ResponseEntity<Object> testGet(String path, Long userId, Map<String, Object> params) {
+            return get(path, userId, params);
+        }
+
+        public ResponseEntity<Object> testPost(String path, Long userId, Object body) {
+            return post(path, userId, body);
+        }
     }
 }

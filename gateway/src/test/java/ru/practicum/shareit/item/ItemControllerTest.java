@@ -12,24 +12,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.mapper.CommentDto;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ItemController.class)
 class ItemControllerTest {
 
+    private final String USER_ID_HEADER = "X-Sharer-User-Id";
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private ObjectMapper objectMapper;
-
     @MockBean
     private ItemClient itemClient;
-
-    private final String USER_ID_HEADER = "X-Sharer-User-Id";
     private ItemDto validItemDto;
     private CommentDto validCommentDto;
 

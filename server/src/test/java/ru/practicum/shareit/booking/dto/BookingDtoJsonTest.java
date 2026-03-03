@@ -1,4 +1,5 @@
 package ru.practicum.shareit.booking.dto;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
@@ -15,13 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JsonTest
 class BookingDtoJsonTest {
 
+    private final LocalDateTime now = LocalDateTime.now();
     @Autowired
     private JacksonTester<BookingDto> json;
-
     @Autowired
     private JacksonTester<BookingResponseDto> responseJson;
-
-    private final LocalDateTime now = LocalDateTime.now();
 
     @Test
     void testSerializeBookingDto() throws IOException {
