@@ -231,30 +231,46 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
-        User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", userId)));
+        try {
+            User author = userRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", userId)));
 
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
 
-        boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                userId, itemId, BookingStatus.APPROVED);
+            log.info("Проверка бронирования: userId={}, itemId={}, status=APPROVED", userId, itemId);
 
-        if (!hasApprovedBooking) {
-            throw new ValidationException(
-                    String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду",
-                            userId, itemId));
+            boolean hasApprovedBooking = bookingRepository.hasUserBookedAndApproved(
+                    userId, itemId, LocalDateTime.now());
+
+            log.info("Результат проверки бронирования: {}", hasApprovedBooking);
+
+            if (!hasApprovedBooking) {
+                throw new ValidationException(
+                        String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду",
+                                userId, itemId));
+            }
+
+            Comment comment = new Comment();
+            comment.setText(commentDto.getText());
+            comment.setItem(item);
+            comment.setAuthor(author);
+            comment.setCreated(LocalDateTime.now());
+
+            Comment savedComment = commentRepository.save(comment);
+            log.info("Комментарий добавлен с ID={}", savedComment.getId());
+
+            return CommentMapper.toCommentDto(savedComment);
+
+        } catch (NotFoundException e) {
+            log.error("Сущность не найдена", e);
+            throw e;
+        } catch (ValidationException e) {
+            log.error("Ошибка валидации", e);
+            throw e;
+        } catch (Exception e) {
+            log.error("НЕОЖИДАННАЯ ОШИБКА в addComment: ", e);
+            throw e;
         }
-
-        Comment comment = new Comment();
-        comment.setText(commentDto.getText());
-        comment.setItem(item);
-        comment.setAuthor(author);
-        comment.setCreated(LocalDateTime.now());
-
-        Comment savedComment = commentRepository.save(comment);
-        log.info("Комментарий добавлен с ID={}", savedComment.getId());
-
-        return CommentMapper.toCommentDto(savedComment);
     }
 }
