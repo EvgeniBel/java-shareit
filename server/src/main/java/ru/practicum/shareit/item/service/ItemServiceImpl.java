@@ -262,14 +262,15 @@ public class ItemServiceImpl implements ItemService {
             return CommentMapper.toCommentDto(savedComment);
 
         } catch (NotFoundException e) {
-            log.error("Сущность не найдена", e);
+            log.error("Сущность не найдена: {}", e.getMessage());
             throw e;
         } catch (ValidationException e) {
-            log.error("Ошибка валидации", e);
+            log.error("Ошибка валидации: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("НЕОЖИДАННАЯ ОШИБКА в addComment: ", e);
-            throw e;
+            // Пробрасываем RuntimeException, чтобы ErrorHandler вернул 500
+            throw new RuntimeException("Внутренняя ошибка сервера при добавлении комментария", e);
         }
     }
 }
