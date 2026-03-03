@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -626,8 +625,8 @@ class ItemServiceImplTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
-        when(bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                eq(2L), eq(1L), eq(BookingStatus.APPROVED)))
+        when(bookingRepository.existsCompletedBooking(
+                eq(2L), eq(1L), any(LocalDateTime.class)))
                 .thenReturn(true);
 
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);

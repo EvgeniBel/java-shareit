@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -228,33 +227,51 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
-        User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", userId)));
+        try {
+            log.debug("Поиск пользователя с ID={}", userId);
+            User author = userRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+            log.debug("Пользователь найден: {}", author);
 
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
+            log.debug("Поиск вещи с ID={}", itemId);
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+            log.debug("Вещь найдена: {}", item);
 
-        boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                userId, itemId, BookingStatus.APPROVED);
+            log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-        if (!hasApprovedBooking) {
-            throw new ValidationException(
-                    String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду",
-                            userId, itemId));
+            LocalDateTime now = LocalDateTime.now();
+            boolean hasCompletedBooking = bookingRepository.existsCompletedBooking(
+                    userId, itemId, now);  // <- этот метод уже есть в репозитории!
+
+            log.info("Есть завершенное бронирование: {}", hasCompletedBooking);
+
+            if (!hasCompletedBooking) {
+                log.warn("Пользователь ID={} не брал вещь ID={} в аренду или бронирование еще не завершено",
+                        userId, itemId);
+                throw new ValidationException("Пользователь не брал вещь в аренду");
+            }
+
+            Comment comment = new Comment();
+            comment.setText(commentDto.getText());
+            comment.setItem(item);
+            comment.setAuthor(author);
+            comment.setCreated(LocalDateTime.now());
+
+            Comment savedComment = commentRepository.save(comment);
+            log.info("Комментарий успешно добавлен с ID={}", savedComment.getId());
+
+            return CommentMapper.toCommentDto(savedComment);
+
+        } catch (NotFoundException | ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("НЕОЖИДАННАЯ ОШИБКА: ", e);
+            throw new RuntimeException("Внутренняя ошибка сервера");
         }
-
-        Comment comment = new Comment();
-        comment.setText(commentDto.getText());
-        comment.setItem(item);
-        comment.setAuthor(author);
-        comment.setCreated(LocalDateTime.now());
-
-        Comment savedComment = commentRepository.save(comment);
-        log.info("Комментарий добавлен с ID={}", savedComment.getId());
-
-        return CommentMapper.toCommentDto(savedComment);
     }
 }
