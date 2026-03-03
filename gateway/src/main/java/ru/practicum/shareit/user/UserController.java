@@ -35,7 +35,7 @@ public class UserController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable Long userId,
-                                             @Valid @RequestBody UserDto userDto) {
+                                              @RequestBody UserDto userDto) {
         log.info("Gateway: PATCH /users/{} with user: {}", userId, userDto);
         return userClient.updateUser(userId, userDto);
     }
