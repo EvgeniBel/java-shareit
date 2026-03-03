@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserUpdateDto;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -135,7 +136,7 @@ class UserControllerTest {
 
     @Test
     void testUpdateUserWithValidData() throws Exception {
-        when(userClient.updateUser(eq(1L), any(UserDto.class)))
+        when(userClient.updateUser(eq(1L), any(UserUpdateDto.class)))
                 .thenReturn(ResponseEntity.ok().build());
 
         mockMvc.perform(patch("/users/1")
@@ -146,9 +147,8 @@ class UserControllerTest {
 
     @Test
     void testUpdateUserWithInvalidEmail() throws Exception {
-        UserDto invalidDto = UserDto.builder()
-                .email("not-an-email")
-                .build();
+        UserUpdateDto invalidDto = new UserUpdateDto();
+        invalidDto.setEmail("not-an-email");
 
         mockMvc.perform(patch("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
