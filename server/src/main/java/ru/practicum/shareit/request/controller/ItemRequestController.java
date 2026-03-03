@@ -1,4 +1,5 @@
 package ru.practicum.shareit.request.controller;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +14,11 @@ import java.util.List;
 @RequestMapping("/requests")
 @RequiredArgsConstructor
 public class ItemRequestController {
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final ItemRequestService itemRequestService;
 
     @PostMapping
-    public ItemRequestDto createItemRequest(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemRequestDto createItemRequest(@RequestHeader(USER_ID_HEADER) Long userId,
                                             @RequestBody ItemRequestDto itemRequestDto) {
         log.info("Server: POST /requests for user {} with description: {}", userId, itemRequestDto.getDescription());
 
@@ -30,13 +32,13 @@ public class ItemRequestController {
     }
 
     @GetMapping
-    public List<ItemRequestWithItemsDto> getUserItemRequests(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<ItemRequestWithItemsDto> getUserItemRequests(@RequestHeader(USER_ID_HEADER) Long userId) {
         log.info("Server: GET /requests for user {}", userId);
         return itemRequestService.getUserItemRequests(userId);
     }
 
     @GetMapping("/all")
-    public List<ItemRequestWithItemsDto> getAllItemRequests(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public List<ItemRequestWithItemsDto> getAllItemRequests(@RequestHeader(USER_ID_HEADER) Long userId,
                                                             @RequestParam(defaultValue = "0") Integer from,
                                                             @RequestParam(defaultValue = "10") Integer size) {
         log.info("Server: GET /requests/all for user {} with from={}, size={}", userId, from, size);
@@ -44,7 +46,7 @@ public class ItemRequestController {
     }
 
     @GetMapping("/{requestId}")
-    public ItemRequestWithItemsDto getItemRequest(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemRequestWithItemsDto getItemRequest(@RequestHeader(USER_ID_HEADER) Long userId,
                                                   @PathVariable Long requestId) {
         log.info("Server: GET /requests/{} for user {}", requestId, userId);
         return itemRequestService.getItemRequest(userId, requestId);

@@ -1,9 +1,11 @@
 package ru.practicum.shareit.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.util.Map;
 
@@ -37,5 +39,23 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, String> handleUnauthorizedAccessException(final UnauthorizedAccessException e) {
         return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleIllegalArgumentException(final IllegalArgumentException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleHandlerMethodValidationException(final HandlerMethodValidationException e) {
+        return Map.of("error", "Ошибка валидации параметров запроса");
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
+        return Map.of("error", "Ошибка валидации: " + e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
     }
 }

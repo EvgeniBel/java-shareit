@@ -14,10 +14,11 @@ import java.util.List;
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final ItemService itemService;
 
     @GetMapping
-    public List<ItemDto> getUserItems(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public List<ItemDto> getUserItems(@RequestHeader(USER_ID_HEADER) Long userId,
                                       @RequestParam(defaultValue = "0") Integer from,
                                       @RequestParam(defaultValue = "10") Integer size) {
         log.info("Server: GET /items for user {}", userId);
@@ -25,21 +26,21 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto getItemById(@RequestHeader(USER_ID_HEADER) Long userId,
                                @PathVariable Long itemId) {
         log.info("Server: GET /items/{} for user {}", itemId, userId);
         return itemService.getItemById(userId, itemId);
     }
 
     @PostMapping
-    public ItemDto createItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto createItem(@RequestHeader(USER_ID_HEADER) Long userId,
                               @RequestBody ItemDto itemDto) {
         log.info("Server: POST /items for user {} with item: {}", userId, itemDto);
         return itemService.createItem(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto updateItem(@RequestHeader(USER_ID_HEADER) Long userId,
                               @PathVariable Long itemId,
                               @RequestBody ItemDto itemDto) {
         log.info("Server: PATCH /items/{} for user {} with item: {}", itemId, userId, itemDto);
@@ -47,7 +48,7 @@ public class ItemController {
     }
 
     @DeleteMapping("/{itemId}")
-    public void deleteItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public void deleteItem(@RequestHeader(USER_ID_HEADER) Long userId,
                            @PathVariable Long itemId) {
         log.info("Server: DELETE /items/{} for user {}", itemId, userId);
         itemService.deleteItem(userId, itemId);
@@ -62,7 +63,7 @@ public class ItemController {
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentDto addComment(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public CommentDto addComment(@RequestHeader(USER_ID_HEADER) Long userId,
                                  @PathVariable Long itemId,
                                  @RequestBody CommentDto commentDto) {
         log.info("Server: POST /items/{}/comment for user {}", itemId, userId);

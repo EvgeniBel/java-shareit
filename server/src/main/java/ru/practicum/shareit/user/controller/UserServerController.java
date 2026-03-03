@@ -1,4 +1,5 @@
 package ru.practicum.shareit.user.controller;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
-public class UserServerController {  // Имя может быть другим
+public class UserServerController {
     private final UserService userService;
 
     @PostMapping

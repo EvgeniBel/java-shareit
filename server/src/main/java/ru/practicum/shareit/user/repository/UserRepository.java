@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailAndIdNot(@Param("email") String email,
                                   @Param("userId") Long userId);
 
-    // Поиск пользователей по части email (для админки)
+    // Поиск пользователей по части email
     @Query("SELECT u FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))")
     List<User> findByEmailContaining(@Param("email") String email);
 

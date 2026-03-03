@@ -14,10 +14,11 @@ import java.util.List;
 @RequestMapping("/bookings")
 @RequiredArgsConstructor
 public class BookingController {
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
     private final BookingService bookingService;
 
     @GetMapping
-    public List<BookingResponseDto> getUserBookings(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public List<BookingResponseDto> getUserBookings(@RequestHeader(USER_ID_HEADER) Long userId,
                                                     @RequestParam(defaultValue = "ALL") String state,
                                                     @RequestParam(defaultValue = "0") Integer from,
                                                     @RequestParam(defaultValue = "10") Integer size) {
@@ -26,7 +27,7 @@ public class BookingController {
     }
 
     @GetMapping("/owner")
-    public List<BookingResponseDto> getOwnerBookings(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public List<BookingResponseDto> getOwnerBookings(@RequestHeader(USER_ID_HEADER) Long userId,
                                                      @RequestParam(defaultValue = "ALL") String state,
                                                      @RequestParam(defaultValue = "0") Integer from,
                                                      @RequestParam(defaultValue = "10") Integer size) {
@@ -35,21 +36,21 @@ public class BookingController {
     }
 
     @GetMapping("/{bookingId}")
-    public BookingResponseDto getBookingById(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public BookingResponseDto getBookingById(@RequestHeader(USER_ID_HEADER) Long userId,
                                              @PathVariable Long bookingId) {
         log.info("Server: GET /bookings/{} for user {}", bookingId, userId);
         return bookingService.getBooking(userId, bookingId);
     }
 
     @PostMapping
-    public BookingResponseDto createBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public BookingResponseDto createBooking(@RequestHeader(USER_ID_HEADER) Long userId,
                                             @RequestBody BookingRequestDto bookingRequestDto) {
         log.info("Server: POST /bookings for user {} with booking: {}", userId, bookingRequestDto);
         return bookingService.createBooking(userId, bookingRequestDto);
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingResponseDto updateBookingStatus(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public BookingResponseDto updateBookingStatus(@RequestHeader(USER_ID_HEADER) Long userId,
                                                   @PathVariable Long bookingId,
                                                   @RequestParam Boolean approved) {
         log.info("Server: PATCH /bookings/{} for user {} with approved={}", bookingId, userId, approved);
@@ -57,7 +58,7 @@ public class BookingController {
     }
 
     @PatchMapping("/{bookingId}/cancel")
-    public BookingResponseDto cancelBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public BookingResponseDto cancelBooking(@RequestHeader(USER_ID_HEADER) Long userId,
                                             @PathVariable Long bookingId) {
         log.info("Server: PATCH /bookings/{}/cancel for user {}", bookingId, userId);
         return bookingService.cancelBooking(userId, bookingId);

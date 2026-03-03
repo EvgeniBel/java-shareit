@@ -19,6 +19,6 @@ public interface ItemRequestRepository extends JpaRepository<ItemRequest, Long> 
             "ORDER BY ir.created DESC")
     List<ItemRequest> findAllExceptUser(@Param("userId") Long userId, Pageable pageable);
 
-        // Подсчет количества запросов пользователя
+    // Подсчет количества запросов пользователя
     long countByRequestorId(Long requestorId);
 }

@@ -24,7 +24,10 @@ public class BookingController {
                                               @RequestParam(defaultValue = "0") @Min(0) Integer from,
                                               @RequestParam(defaultValue = "10") @Min(1) Integer size) {
         log.info("Gateway: GET /bookings for user {} with state {}", userId, state);
-        BookingState.from(state);
+
+        BookingState.from(state)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + state));
+
         return bookingClient.getBookings(userId, state, from, size);
     }
 
@@ -56,7 +59,9 @@ public class BookingController {
                                                    @RequestParam(defaultValue = "0") @Min(0) Integer from,
                                                    @RequestParam(defaultValue = "10") @Min(1) Integer size) {
         log.info("Gateway: GET /bookings/owner for user {} with state {}", userId, state);
-        BookingState.from(state);
+        BookingState.from(state)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + state));
+
         return bookingClient.getOwnerBookings(userId, state, from, size);
     }
 }
