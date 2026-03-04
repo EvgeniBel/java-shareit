@@ -227,6 +227,7 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
