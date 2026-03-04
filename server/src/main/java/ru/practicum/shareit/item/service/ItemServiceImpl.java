@@ -239,21 +239,14 @@ public class ItemServiceImpl implements ItemService {
                     .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
+            
+            boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
+                    userId, itemId);
 
-            // Получаем все подтвержденные бронирования пользователя для этой вещи
-            List<Booking> approvedBookings = bookingRepository.findByBookerIdAndItemIdAndStatus(
-                    userId, itemId, BookingStatus.APPROVED);
+            log.info("Результат проверки: {}", hasApprovedBooking);
 
-            if (approvedBookings.isEmpty()) {
+            if (!hasApprovedBooking) {
                 throw new ValidationException("Пользователь не брал вещь в аренду");
-            }
-
-            // Проверяем, есть ли среди них завершенные (past)
-            boolean hasCompletedBooking = approvedBookings.stream()
-                    .anyMatch(booking -> booking.getEnd().isBefore(LocalDateTime.now()));
-
-            if (!hasCompletedBooking) {
-                throw new ValidationException("Нельзя оставить комментарий до завершения бронирования");
             }
 
             Comment comment = new Comment();
@@ -263,6 +256,8 @@ public class ItemServiceImpl implements ItemService {
             comment.setCreated(LocalDateTime.now());
 
             Comment savedComment = commentRepository.save(comment);
+            log.info("Комментарий добавлен с ID={}", savedComment.getId());
+
             return CommentMapper.toCommentDto(savedComment);
 
         } catch (NotFoundException | ValidationException e) {
