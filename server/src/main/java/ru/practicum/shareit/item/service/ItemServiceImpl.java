@@ -237,13 +237,19 @@ public class ItemServiceImpl implements ItemService {
             Item item = itemRepository.findById(itemId)
                     .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
-            log.info("Проверка завершенного бронирования: userId={}, itemId={}", userId, itemId);
+            log.info("Проверка завершенного бронирования: userId={}, itemId={}, now={}",
+                    userId, itemId, LocalDateTime.now());
 
-            // ИСПОЛЬЗУЕМ hasCompletedBooking вместо existsByBookerIdAndItemIdAndStatus
-            boolean hasCompletedBooking = bookingRepository.hasCompletedBooking(
-                    userId, itemId, LocalDateTime.now().plusSeconds(2));
-
-            log.info("Результат проверки: {}", hasCompletedBooking);
+            // ВРЕМЕННО: замените на простой запрос для теста
+            boolean hasCompletedBooking = false;
+            try {
+                hasCompletedBooking = bookingRepository.hasCompletedBooking(
+                        userId, itemId, LocalDateTime.now());
+                log.info("Результат проверки: {}", hasCompletedBooking);
+            } catch (Exception e) {
+                log.error("ОШИБКА ПРИ ВЫПОЛНЕНИИ ЗАПРОСА: ", e);
+                throw e;
+            }
 
             if (!hasCompletedBooking) {
                 throw new ValidationException("Отзыв можно оставить только после завершения бронирования");
