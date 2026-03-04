@@ -242,7 +242,7 @@ public class ItemServiceImpl implements ItemService {
 
             // ИСПОЛЬЗУЕМ hasCompletedBooking вместо existsByBookerIdAndItemIdAndStatus
             boolean hasCompletedBooking = bookingRepository.hasCompletedBooking(
-                    userId, itemId, LocalDateTime.now(), BookingStatus.APPROVED);
+                    userId, itemId, LocalDateTime.now());
 
             log.info("Результат проверки: {}", hasCompletedBooking);
 

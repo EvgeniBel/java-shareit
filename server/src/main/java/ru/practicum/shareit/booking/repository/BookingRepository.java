@@ -57,16 +57,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsByBookerIdAndItemIdAndStatus(@Param("bookerId") Long bookerId,
                                                @Param("itemId") Long itemId);
 
-    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END " +
-            "FROM Booking b " +
-            "WHERE b.bookerId = :bookerId " +  // используем bookerId
-            "AND b.itemId = :itemId " +        // используем itemId
-            "AND b.end < :now " +
-            "AND b.status = :status")
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
+            "FROM bookings b " +
+            "WHERE b.booker_id = :bookerId " +
+            "AND b.item_id = :itemId " +
+            "AND b.end_date < :now " +
+            "AND b.status = 'APPROVED'",
+            nativeQuery = true)
     boolean hasCompletedBooking(@Param("bookerId") Long bookerId,
                                 @Param("itemId") Long itemId,
-                                @Param("now") LocalDateTime now,
-                                @Param("status") BookingStatus status);
+                                @Param("now") LocalDateTime now);
 
     List<Booking> findByBookerIdAndItemIdAndStatus(Long bookerId, Long itemId, BookingStatus status);
 }
