@@ -240,7 +240,7 @@ public class ItemServiceImpl implements ItemService {
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            // Получаем все подтвержденные бронирования пользователя для этой вещи
+            // Используем правильный метод с @Query
             List<Booking> approvedBookings = bookingRepository
                     .findByBookerIdAndItemIdAndStatus(userId, itemId, BookingStatus.APPROVED);
 
@@ -250,11 +250,11 @@ public class ItemServiceImpl implements ItemService {
                 throw new ValidationException("Пользователь не брал вещь в аренду");
             }
 
-            // Проверяем, есть ли среди них завершенные ИЛИ текущие (для теста)
-            boolean hasCompletedOrCurrentBooking = approvedBookings.stream()
+            // Разрешаем комментарий, если бронирование началось
+            boolean canComment = approvedBookings.stream()
                     .anyMatch(booking -> !booking.getStart().isAfter(LocalDateTime.now()));
 
-            if (!hasCompletedOrCurrentBooking) {
+            if (!canComment) {
                 throw new ValidationException("Отзыв можно оставить только после начала бронирования");
             }
 
