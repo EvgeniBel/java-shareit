@@ -239,11 +239,15 @@ public class ItemServiceImpl implements ItemService {
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            // Используем existsByBookerIdAndItemIdAndStatus (работает!)
-            boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                    userId, itemId);
-
-            log.info("Есть подтвержденное бронирование: {}", hasApprovedBooking);
+            boolean hasApprovedBooking = false;
+            try {
+                hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
+                        userId, itemId);
+                log.info("Есть подтвержденное бронирование: {}", hasApprovedBooking);
+            } catch (Exception e) {
+                log.error("ОШИБКА ПРИ ВЫЗОВЕ existsByBookerIdAndItemIdAndStatus: ", e);
+                throw e;
+            }
 
             if (!hasApprovedBooking) {
                 throw new ValidationException("Пользователь не брал вещь в аренду");
