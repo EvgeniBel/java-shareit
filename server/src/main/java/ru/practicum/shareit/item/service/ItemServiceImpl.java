@@ -237,28 +237,14 @@ public class ItemServiceImpl implements ItemService {
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            // Используем правильный метод с @Query
-            List<Booking> approvedBookings = new ArrayList<>();
-            try {
-                approvedBookings = bookingRepository
-                        .findByBookerIdAndItemIdAndStatus(userId, itemId, BookingStatus.APPROVED);
-            } catch (Exception e) {
-                log.error("ОШИБКА В ЗАПРОСЕ: ", e);
-                throw e;
-            }
+            // Используем existsByBookerIdAndItemIdAndStatus (работает!)
+            boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
+                    userId, itemId);
 
-            log.info("Найдено подтвержденных бронирований: {}", approvedBookings.size());
+            log.info("Есть подтвержденное бронирование: {}", hasApprovedBooking);
 
-            if (approvedBookings.isEmpty()) {
+            if (!hasApprovedBooking) {
                 throw new ValidationException("Пользователь не брал вещь в аренду");
-            }
-
-            // Разрешаем комментарий, если бронирование началось
-            boolean canComment = approvedBookings.stream()
-                    .anyMatch(booking -> booking.getStart().isBefore(LocalDateTime.now().plusSeconds(3)));
-
-            if (!canComment) {
-                throw new ValidationException("Отзыв можно оставить только после начала бронирования");
             }
 
             Comment comment = new Comment();
