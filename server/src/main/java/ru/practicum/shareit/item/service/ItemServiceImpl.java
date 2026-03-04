@@ -27,10 +27,7 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -241,8 +238,14 @@ public class ItemServiceImpl implements ItemService {
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
             // Используем правильный метод с @Query
-            List<Booking> approvedBookings = bookingRepository
-                    .findByBookerIdAndItemIdAndStatus(userId, itemId, BookingStatus.APPROVED);
+            List<Booking> approvedBookings = new ArrayList<>();
+            try {
+                approvedBookings = bookingRepository
+                        .findByBookerIdAndItemIdAndStatus(userId, itemId, BookingStatus.APPROVED);
+            } catch (Exception e) {
+                log.error("ОШИБКА В ЗАПРОСЕ: ", e);
+                throw e;
+            }
 
             log.info("Найдено подтвержденных бронирований: {}", approvedBookings.size());
 
