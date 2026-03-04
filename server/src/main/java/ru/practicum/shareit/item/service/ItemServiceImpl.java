@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -237,15 +238,16 @@ public class ItemServiceImpl implements ItemService {
             Item item = itemRepository.findById(itemId)
                     .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
-            log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
+            log.info("Проверка завершенного бронирования: userId={}, itemId={}", userId, itemId);
 
-            boolean hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                    userId, itemId);
+            // ИСПОЛЬЗУЕМ hasCompletedBooking вместо existsByBookerIdAndItemIdAndStatus
+            boolean hasCompletedBooking = bookingRepository.hasCompletedBooking(
+                    userId, itemId, LocalDateTime.now(), BookingStatus.APPROVED);
 
-            log.info("Результат проверки: {}", hasApprovedBooking);
+            log.info("Результат проверки: {}", hasCompletedBooking);
 
-            if (!hasApprovedBooking) {
-                throw new ValidationException("Пользователь не брал вещь в аренду");
+            if (!hasCompletedBooking) {
+                throw new ValidationException("Отзыв можно оставить только после завершения бронирования");
             }
 
             Comment comment = new Comment();
