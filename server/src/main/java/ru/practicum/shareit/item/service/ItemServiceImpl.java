@@ -255,8 +255,6 @@ public class ItemServiceImpl implements ItemService {
             comment.setCreated(LocalDateTime.now());
 
             Comment savedComment = commentRepository.save(comment);
-            log.info("Комментарий добавлен с ID={}", savedComment.getId());
-
             return CommentMapper.toCommentDto(savedComment);
 
         } catch (NotFoundException | ValidationException e) {
