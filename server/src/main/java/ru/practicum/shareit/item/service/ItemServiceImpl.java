@@ -251,7 +251,8 @@ public class ItemServiceImpl implements ItemService {
             }
 
             Comment comment = new Comment();
-            comment.setText(commentDto.getText());
+            // Разрешаем пустой текст
+            comment.setText(commentDto.getText() == null ? "" : commentDto.getText());
             comment.setItem(item);
             comment.setAuthor(author);
             comment.setCreated(LocalDateTime.now());
@@ -269,7 +270,6 @@ public class ItemServiceImpl implements ItemService {
             throw e;
         } catch (Exception e) {
             log.error("НЕОЖИДАННАЯ ОШИБКА в addComment: ", e);
-            // Пробрасываем RuntimeException, чтобы ErrorHandler вернул 500
             throw new RuntimeException("Внутренняя ошибка сервера при добавлении комментария", e);
         }
     }
