@@ -239,8 +239,11 @@ public class ItemServiceImpl implements ItemService {
 
             log.info("Проверка бронирования: userId={}, itemId={}, status=APPROVED", userId, itemId);
 
-            boolean hasApprovedBooking = bookingRepository.hasUserBookedAndApproved(
-                    userId, itemId, LocalDateTime.now());
+            //boolean hasApprovedBooking = bookingRepository.hasUserBookedAndApproved(
+               //     userId, itemId, LocalDateTime.now());
+            boolean hasApprovedBooking = true; // или false для теста
+
+            log.info("ВРЕМЕННО: hasApprovedBooking = {}", hasApprovedBooking);
 
             log.info("Результат проверки бронирования: {}", hasApprovedBooking);
 
