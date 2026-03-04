@@ -231,17 +231,15 @@ public class ItemServiceImpl implements ItemService {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
         try {
-            // Проверка входных параметров
-            if (userId == null || itemId == null) {
-                log.error("userId или itemId равны null: userId={}, itemId={}", userId, itemId);
-                throw new ValidationException("Некорректные параметры");
-            }
-
+            log.debug("Поиск пользователя с ID={}", userId);
             User author = userRepository.findById(userId)
                     .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+            log.debug("Пользователь найден: {}", author);
 
+            log.debug("Поиск вещи с ID={}", itemId);
             Item item = itemRepository.findById(itemId)
                     .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+            log.debug("Вещь найдена: {}", item);
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 

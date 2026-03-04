@@ -48,12 +48,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                      @Param("itemId") Long itemId,
                                      @Param("now") LocalDateTime now);
 
-    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
-            "FROM bookings b " +
-            "WHERE b.booker_id = :bookerId " +
-            "AND b.item_id = :itemId " +
-            "AND b.status = 'APPROVED'",
-            nativeQuery = true)
+    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+            "WHERE b.bookerId = :bookerId " +
+            "AND b.itemId = :itemId " +
+            "AND b.status = 'APPROVED'")
     boolean existsByBookerIdAndItemIdAndStatus(@Param("bookerId") Long bookerId,
                                                @Param("itemId") Long itemId);
 
