@@ -252,7 +252,7 @@ public class ItemServiceImpl implements ItemService {
 
             // Разрешаем комментарий, если бронирование началось
             boolean canComment = approvedBookings.stream()
-                    .anyMatch(booking -> !booking.getStart().isAfter(LocalDateTime.now()));
+                    .anyMatch(booking -> booking.getStart().isBefore(LocalDateTime.now().plusSeconds(3)));
 
             if (!canComment) {
                 throw new ValidationException("Отзыв можно оставить только после начала бронирования");
