@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.UnauthorizedAccessException;
@@ -237,22 +238,24 @@ public class ItemServiceImpl implements ItemService {
             Item item = itemRepository.findById(itemId)
                     .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
-            log.info("Проверка завершенного бронирования: userId={}, itemId={}, now={}",
-                    userId, itemId, LocalDateTime.now());
+            log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            // ВРЕМЕННО: замените на простой запрос для теста
-            boolean hasCompletedBooking = false;
-            try {
-                hasCompletedBooking = bookingRepository.hasCompletedBooking(
-                        userId, itemId, LocalDateTime.now());
-                log.info("Результат проверки: {}", hasCompletedBooking);
-            } catch (Exception e) {
-                log.error("ОШИБКА ПРИ ВЫПОЛНЕНИИ ЗАПРОСА: ", e);
-                throw e;
+            // Получаем все подтвержденные бронирования пользователя для этой вещи
+            List<Booking> approvedBookings = bookingRepository
+                    .findByBookerIdAndItemIdAndStatus(userId, itemId, BookingStatus.APPROVED);
+
+            log.info("Найдено подтвержденных бронирований: {}", approvedBookings.size());
+
+            if (approvedBookings.isEmpty()) {
+                throw new ValidationException("Пользователь не брал вещь в аренду");
             }
 
-            if (!hasCompletedBooking) {
-                throw new ValidationException("Отзыв можно оставить только после завершения бронирования");
+            // Проверяем, есть ли среди них завершенные ИЛИ текущие (для теста)
+            boolean hasCompletedOrCurrentBooking = approvedBookings.stream()
+                    .anyMatch(booking -> !booking.getStart().isAfter(LocalDateTime.now()));
+
+            if (!hasCompletedOrCurrentBooking) {
+                throw new ValidationException("Отзыв можно оставить только после начала бронирования");
             }
 
             Comment comment = new Comment();
