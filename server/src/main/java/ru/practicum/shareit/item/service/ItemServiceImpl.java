@@ -244,18 +244,16 @@ public class ItemServiceImpl implements ItemService {
 
             log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            boolean hasApprovedBooking = false;
-            try {
-                log.debug("Вызов existsByBookerIdAndItemIdAndStatus с параметрами: {}, {}", userId, itemId);
-                hasApprovedBooking = bookingRepository.existsByBookerIdAndItemIdAndStatus(
-                        userId, itemId);
-                log.info("Есть подтвержденное бронирование: {}", hasApprovedBooking);
-            } catch (Exception e) {
-                log.error("ОШИБКА ПРИ ВЫЗОВЕ existsByBookerIdAndItemIdAndStatus: ", e);
-                throw e;
-            }
+            // Используем правильный метод
+            LocalDateTime now = LocalDateTime.now();
+            boolean hasCompletedBooking = bookingRepository.existsCompletedBooking(
+                    userId, itemId, now);  // <- этот метод уже есть в репозитории!
 
-            if (!hasApprovedBooking) {
+            log.info("Есть завершенное бронирование: {}", hasCompletedBooking);
+
+            if (!hasCompletedBooking) {
+                log.warn("Пользователь ID={} не брал вещь ID={} в аренду или бронирование еще не завершено",
+                        userId, itemId);
                 throw new ValidationException("Пользователь не брал вещь в аренду");
             }
 
@@ -266,6 +264,8 @@ public class ItemServiceImpl implements ItemService {
             comment.setCreated(LocalDateTime.now());
 
             Comment savedComment = commentRepository.save(comment);
+            log.info("Комментарий успешно добавлен с ID={}", savedComment.getId());
+
             return CommentMapper.toCommentDto(savedComment);
 
         } catch (NotFoundException | ValidationException e) {

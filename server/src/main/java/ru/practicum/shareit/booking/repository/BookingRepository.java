@@ -37,24 +37,31 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findFirstByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime start);
 
-    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
-            "FROM bookings b " +
-            "WHERE b.booker_id = :bookerId " +
-            "AND b.item_id = :itemId " +
-            "AND b.end_date < :now " +
-            "AND b.status = 'APPROVED'",
-            nativeQuery = true)
-    boolean hasUserBookedAndApproved(@Param("bookerId") Long bookerId,
-                                     @Param("itemId") Long itemId,
-                                     @Param("now") LocalDateTime now);
+    // Проверка, бронировал ли пользователь вещь (любой статус)
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
+            "WHERE b.bookerId = :bookerId AND b.itemId = :itemId")
+    boolean existsByBookerIdAndItemId(@Param("bookerId") Long bookerId,
+                                      @Param("itemId") Long itemId);
 
-    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+    // Проверка, есть ли у пользователя подтвержденное бронирование вещи
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
+            "WHERE b.bookerId = :bookerId AND b.itemId = :itemId AND b.status = 'APPROVED'")
+    boolean existsByBookerIdAndItemIdAndStatus(
+            @Param("bookerId") Long bookerId,
+            @Param("itemId") Long itemId);
+
+    // Проверка, есть ли у пользователя завершенное подтвержденное бронирование (для комментариев)
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
             "WHERE b.bookerId = :bookerId " +
             "AND b.itemId = :itemId " +
-            "AND b.status = 'APPROVED'")
-    boolean existsByBookerIdAndItemIdAndStatus(@Param("bookerId") Long bookerId,
-                                               @Param("itemId") Long itemId);
+            "AND b.status = 'APPROVED' " +
+            "AND b.end < :now")
+    boolean existsCompletedBooking(
+            @Param("bookerId") Long bookerId,
+            @Param("itemId") Long itemId,
+            @Param("now") LocalDateTime now);
 
+    // Нативный SQL запрос (альтернатива)
     @Query(value = "SELECT COUNT(*) > 0 FROM bookings b " +
             "WHERE b.booker_id = :bookerId " +
             "AND b.item_id = :itemId " +
@@ -65,11 +72,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                 @Param("itemId") Long itemId,
                                 @Param("now") LocalDateTime now);
 
-    @Query("SELECT b FROM Booking b " +
-            "WHERE b.bookerId = :bookerId " +
-            "AND b.itemId = :itemId " +
-            "AND b.status = :status")
-    List<Booking> findByBookerIdAndItemIdAndStatus(@Param("bookerId") Long bookerId,
-                                                   @Param("itemId") Long itemId,
-                                                   @Param("status") BookingStatus status);
+    // Для поиска конкретных бронирований
+    List<Booking> findByBookerIdAndItemIdAndStatus(Long bookerId, Long itemId, BookingStatus status);
 }
