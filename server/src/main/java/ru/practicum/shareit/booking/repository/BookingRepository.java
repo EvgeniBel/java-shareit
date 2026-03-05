@@ -37,16 +37,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findFirstByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime start);
 
-    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END " +
-            "FROM Booking b " +
+    // Проверка, есть ли у пользователя завершенное подтвержденное бронирование (для комментариев)
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
             "WHERE b.bookerId = :bookerId " +
             "AND b.itemId = :itemId " +
-            "AND b.end < :now " +
-            "AND b.status = 'APPROVED'")
-    boolean hasUserBookedAndApproved(@Param("bookerId") Long bookerId,
-                                     @Param("itemId") Long itemId,
-                                     @Param("now") LocalDateTime now);
-
-
-    boolean existsByBookerIdAndItemIdAndStatus(Long bookerId, Long itemId, BookingStatus status);
+            "AND b.status = 'APPROVED' " +
+            "AND b.end < :now")
+    boolean existsCompletedBooking(
+            @Param("bookerId") Long bookerId,
+            @Param("itemId") Long itemId,
+            @Param("now") LocalDateTime now);
 }

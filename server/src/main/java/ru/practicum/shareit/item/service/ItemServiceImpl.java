@@ -227,27 +227,33 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         log.info("Добавление комментария к вещи ID={} пользователем ID={}", itemId, userId);
 
         try {
+            log.debug("Поиск пользователя с ID={}", userId);
             User author = userRepository.findById(userId)
-                    .orElseThrow(() -> new NotFoundException(String.format("Пользователь c id=%d не найден", userId)));
+                    .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+            log.debug("Пользователь найден: {}", author);
 
+            log.debug("Поиск вещи с ID={}", itemId);
             Item item = itemRepository.findById(itemId)
-                    .orElseThrow(() -> new NotFoundException(String.format("Вещь c id=%d не найдена", itemId)));
+                    .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+            log.debug("Вещь найдена: {}", item);
 
-            log.info("Проверка бронирования: userId={}, itemId={}, status=APPROVED", userId, itemId);
+            log.info("Проверка бронирования: userId={}, itemId={}", userId, itemId);
 
-            boolean hasApprovedBooking = bookingRepository.hasUserBookedAndApproved(
-                    userId, itemId, LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            boolean hasCompletedBooking = bookingRepository.existsCompletedBooking(
+                    userId, itemId, now);  // <- этот метод уже есть в репозитории!
 
-            log.info("Результат проверки бронирования: {}", hasApprovedBooking);
+            log.info("Есть завершенное бронирование: {}", hasCompletedBooking);
 
-            if (!hasApprovedBooking) {
-                throw new ValidationException(
-                        String.format("Пользователь (id=%d) не брал вещь c id=%d в аренду",
-                                userId, itemId));
+            if (!hasCompletedBooking) {
+                log.warn("Пользователь ID={} не брал вещь ID={} в аренду или бронирование еще не завершено",
+                        userId, itemId);
+                throw new ValidationException("Пользователь не брал вещь в аренду");
             }
 
             Comment comment = new Comment();
@@ -257,19 +263,15 @@ public class ItemServiceImpl implements ItemService {
             comment.setCreated(LocalDateTime.now());
 
             Comment savedComment = commentRepository.save(comment);
-            log.info("Комментарий добавлен с ID={}", savedComment.getId());
+            log.info("Комментарий успешно добавлен с ID={}", savedComment.getId());
 
             return CommentMapper.toCommentDto(savedComment);
 
-        } catch (NotFoundException e) {
-            log.error("Сущность не найдена", e);
-            throw e;
-        } catch (ValidationException e) {
-            log.error("Ошибка валидации", e);
+        } catch (NotFoundException | ValidationException e) {
             throw e;
         } catch (Exception e) {
-            log.error("НЕОЖИДАННАЯ ОШИБКА в addComment: ", e);
-            throw e;
+            log.error("НЕОЖИДАННАЯ ОШИБКА: ", e);
+            throw new RuntimeException("Внутренняя ошибка сервера");
         }
     }
 }
